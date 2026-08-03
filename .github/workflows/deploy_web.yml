@@ -1,0 +1,56 @@
+name: Deploy web example
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.38.5
+          channel: stable
+          cache: true
+      - uses: actions/configure-pages@v5
+      - run: flutter pub get
+      - run: flutter test packages/scroll_world
+      - run: flutter build web --release --base-href /flutter_scroll_world/
+        working-directory: example
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: example/build/web
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Probe demo media delivery
+        shell: bash
+        run: |
+          url="${{ steps.deployment.outputs.page_url }}assets/assets/videos/nairobi-landscape.mp4"
+          status=$(curl --retry 5 --retry-delay 3 --silent --output /dev/null --write-out '%{http_code}' --header 'Range: bytes=0-1023' "$url")
+          if [[ "$status" != "200" && "$status" != "206" ]]; then
+            echo "Unexpected media response: $status"
+            exit 1
+          fi
+          echo "Media probe returned HTTP $status (206 confirms byte-range support)."

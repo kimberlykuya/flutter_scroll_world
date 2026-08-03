@@ -1,0 +1,49 @@
+name: Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality-and-builds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.38.5
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed packages/scroll_world/lib packages/scroll_world/test example/lib example/test example/integration_test tools/generate_manifest.dart
+      - run: python -m py_compile tools/blender/generate_kenya_world.py
+      - run: bash -n tools/render_3d_media.sh tools/encode_video.sh
+      - run: flutter analyze
+      - run: flutter test packages/scroll_world --coverage
+      - run: flutter test example/test
+      - run: dart run tools/generate_manifest.dart
+      - run: git diff --exit-code -- example/assets/media_manifest.json
+      - run: dart pub -C packages/scroll_world publish --dry-run
+      - run: flutter build web --release
+        working-directory: example
+      - run: flutter build apk --debug
+        working-directory: example
+
+  ios-build:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.38.5
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter build ios --release --no-codesign
+        working-directory: example

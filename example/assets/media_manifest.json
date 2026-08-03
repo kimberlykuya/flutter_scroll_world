@@ -1,0 +1,159 @@
+{
+  "assets": [
+    {
+      "path": "posters/coast.webp",
+      "bytes": 17626,
+      "sha256": "f26734547078a0b1ed00190f303da6ad085a776a50523d2a9ce16ddb2c09e104"
+    },
+    {
+      "path": "posters/highlands.webp",
+      "bytes": 18802,
+      "sha256": "c2e7344499c075031dd7e09715753b071225106f9c4a620604d21b3fb0a77475"
+    },
+    {
+      "path": "posters/nairobi.webp",
+      "bytes": 20970,
+      "sha256": "143df299d121dde68b5455b8836479204300b83d133a907bb5be7e11ec274ff5"
+    },
+    {
+      "path": "videos/coast-landscape.mp4",
+      "bytes": 745729,
+      "sha256": "c05dc37f2e85bafd50111fa2c356f38c140e9820dfe6905d250bf111c3297879",
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 960,
+        "height": 540,
+        "avg_frame_rate": "24/1",
+        "duration": "3.000000"
+      },
+      "audio_streams": 0
+    },
+    {
+      "path": "videos/coast-portrait.mp4",
+      "bytes": 875364,
+      "sha256": "7435842d758b812e3227832375cf5f957608d3dc588dd265eaa6b47723a443f8",
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 540,
+        "height": 960,
+        "avg_frame_rate": "24/1",
+        "duration": "3.000000"
+      },
+      "audio_streams": 0
+    },
+    {
+      "path": "videos/highlands-coast-landscape.mp4",
+      "bytes": 282198,
+      "sha256": "0e40aa759b8e3920d878fba5481edf40eb625e331c156e2d00b8bf8735dfc187",
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 960,
+        "height": 540,
+        "avg_frame_rate": "24/1",
+        "duration": "1.500000"
+      },
+      "audio_streams": 0
+    },
+    {
+      "path": "videos/highlands-coast-portrait.mp4",
+      "bytes": 377050,
+      "sha256": "5af119998f7caacdaeaa8f91f284fcac83fb759bb9e079592f0853db79268575",
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 540,
+        "height": 960,
+        "avg_frame_rate": "24/1",
+        "duration": "1.500000"
+      },
+      "audio_streams": 0
+    },
+    {
+      "path": "videos/highlands-landscape.mp4",
+      "bytes": 638681,
+      "sha256": "c8ec6784e3eda0dff1eb3cc33e7e1d2bd1fd7f961a7d65452bb89fc66f4ee467",
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 960,
+        "height": 540,
+        "avg_frame_rate": "24/1",
+        "duration": "3.000000"
+      },
+      "audio_streams": 0
+    },
+    {
+      "path": "videos/highlands-portrait.mp4",
+      "bytes": 950206,
+      "sha256": "782c13257a6549254cd45845777fcaa8bead11b960595b8a860125926b2f6c8a",
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 540,
+        "height": 960,
+        "avg_frame_rate": "24/1",
+        "duration": "3.000000"
+      },
+      "audio_streams": 0
+    },
+    {
+      "path": "videos/nairobi-highlands-landscape.mp4",
+      "bytes": 370488,
+      "sha256": "cf9f28e7e0f1c3e3a270ca506d4d14f442bd7fa06b3dccfff6804ad931e28a95",
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 960,
+        "height": 540,
+        "avg_frame_rate": "24/1",
+        "duration": "1.500000"
+      },
+      "audio_streams": 0
+    },
+    {
+      "path": "videos/nairobi-highlands-portrait.mp4",
+      "bytes": 454546,
+      "sha256": "089188ae2f93de638dccde102a7e01fb9bb132cbe5c4a94a61bb50b9b383d71d",
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 540,
+        "height": 960,
+        "avg_frame_rate": "24/1",
+        "duration": "1.500000"
+      },
+      "audio_streams": 0
+    },
+    {
+      "path": "videos/nairobi-landscape.mp4",
+      "bytes": 597103,
+      "sha256": "47995c91cb74f05741320ae340160e19c025387785e6973bece48d5c6c8b777a",
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 960,
+        "height": 540,
+        "avg_frame_rate": "24/1",
+        "duration": "3.000000"
+      },
+      "audio_streams": 0
+    },
+    {
+      "path": "videos/nairobi-portrait.mp4",
+      "bytes": 867806,
+      "sha256": "64262d743f74cb82f5d7b1d31e8b03a477b8176d07b3b9592710f26e81701986",
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 540,
+        "height": 960,
+        "avg_frame_rate": "24/1",
+        "duration": "3.000000"
+      },
+      "audio_streams": 0
+    }
+  ]
+}

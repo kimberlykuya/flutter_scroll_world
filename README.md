@@ -1,6 +1,57 @@
 # scroll-world
 
 
+This repository now provides two complementary ways to build a scroll world:
+
+- **Flutter package (`scroll_world` 0.1.0):** reusable scroll-linked video scenes for Android, iOS, and web, with Blob-backed seeking, smoothed scrubbing, interactive scene actions, reverse replay, responsive sources, bounded controller pooling, and reduced motion.
+- **Agent skill:** the existing framework-agnostic creative pipeline and vanilla-JavaScript scrub engine remain under `skills/scroll-world` unchanged.
+
+## Flutter package quick start
+
+The repository is a Dart workspace containing the package in `packages/scroll_world` and the “Kenya in Motion” app in `example`.
+
+```bash
+flutter pub get
+flutter test packages/scroll_world
+flutter run -d chrome -t example/lib/main.dart
+```
+
+The example includes a deterministic, audio-free H.264 media set rendered from
+an original procedural Blender 5.2 LTS world. A stylized Nairobi skyline and
+matatu flow into tea-covered Highlands, then a river leads to a Swahili-inspired
+Coast with palms and a dhow. Landscape and portrait media stay below the GitHub
+Pages demo budget; use the agent skill below or your own production pipeline for
+larger cinematic assets.
+
+On the final Coast page, **Replay the journey** travels through the full world
+backwards and stops at Nairobi. Any manual input interrupts the replay.
+
+```dart
+ScrollWorldView(
+  scenes: [
+    ScrollWorldScene(
+      id: 'forest',
+      title: 'Enter the forest',
+      description: 'Explore the landscape.',
+      poster: const AssetImage('assets/posters/forest.webp'),
+      sources: const ScrollWorldSources(
+        mobilePortrait: ScrollWorldSource.asset(
+          'assets/videos/forest-portrait.mp4',
+        ),
+        webStandard: ScrollWorldSource.asset(
+          'assets/videos/forest-web.mp4',
+        ),
+      ),
+    ),
+  ],
+)
+```
+
+See [`packages/scroll_world/README.md`](packages/scroll_world/README.md) for the API, media requirements, accessibility behavior, and troubleshooting. See [`tools/README.md`](tools/README.md) for encoding and manifest generation.
+
+---
+
+
 https://github.com/user-attachments/assets/b08e641e-985b-4bd4-83ff-6750272d0c37
 
 

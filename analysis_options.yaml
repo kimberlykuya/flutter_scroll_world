@@ -1,0 +1,14 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - build/**
+
+linter:
+  rules:
+    always_declare_return_types: true
+    avoid_dynamic_calls: true
+    directives_ordering: true
+    prefer_single_quotes: true
+    sort_constructors_first: true
+    unawaited_futures: true
