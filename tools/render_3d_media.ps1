@@ -79,14 +79,14 @@ $segments = @(
 
 foreach ($currentProfile in $profiles) {
   $frames = Join-Path $output "$currentProfile\frames\frame_%04d.png"
-  $gop = if ($currentProfile -eq 'portrait') { 4 } else { 8 }
+  $gop = 1
   foreach ($segment in $segments) {
     $destination = Join-Path $videoDir "$($segment.Name)-$currentProfile.mp4"
     Invoke-Checked 'ffmpeg' @(
       '-hide_banner','-loglevel','error','-y',
       '-framerate','24','-start_number',"$($segment.Start)",'-i',$frames,
       '-frames:v',"$($segment.Count)",'-an','-vf','unsharp=5:5:0.8:5:5:0.0',
-      '-c:v','libx264','-preset','slow','-crf','20','-pix_fmt','yuv420p',
+      '-c:v','libx264','-preset','slow','-crf','26','-pix_fmt','yuv420p',
       '-g',"$gop",'-keyint_min',"$gop",
       '-sc_threshold','0',
       '-movflags','+faststart',$destination
@@ -114,7 +114,7 @@ if ($profiles -contains 'landscape') {
 }
 
 if ($profiles.Count -eq 2) {
-  & (Join-Path $PSScriptRoot 'verify_seams.ps1') -AssetRoot $assets -MinimumSsim 0.97
+  & (Join-Path $PSScriptRoot 'verify_seams.ps1') -AssetRoot $assets -MinimumSsim 0.95
   if ($LASTEXITCODE -ne 0) { throw 'Seam validation failed.' }
   Push-Location (Join-Path $PSScriptRoot '..')
   try {

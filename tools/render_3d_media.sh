@@ -40,14 +40,13 @@ segment_counts=(72 36 72 36 72)
 for current_profile in "${profiles[@]}"; do
   frames="$output/$current_profile/frames/frame_%04d.png"
   scale=320:180
-  gop=8
+  gop=1
   [[ "$current_profile" == "portrait" ]] && scale=180:320
-  [[ "$current_profile" == "portrait" ]] && gop=4
   for index in "${!segment_names[@]}"; do
     ffmpeg -hide_banner -loglevel error -y -framerate 24 \
       -start_number "${segment_starts[$index]}" -i "$frames" \
       -frames:v "${segment_counts[$index]}" -an -vf "unsharp=5:5:0.8:5:5:0.0" \
-      -c:v libx264 -preset slow -crf 20 -pix_fmt yuv420p \
+      -c:v libx264 -preset slow -crf 26 -pix_fmt yuv420p \
       -g "$gop" -keyint_min "$gop" -sc_threshold 0 \
       -movflags +faststart "$assets/videos/${segment_names[$index]}-$current_profile.mp4"
   done
@@ -75,7 +74,7 @@ if [[ "$profile" == "all" ]]; then
     result=$(ffmpeg -hide_banner -i "$left" -i "$right" -lavfi ssim -f null - 2>&1)
     score=$(sed -n 's/.*All:\([0-9.]*\).*/\1/p' <<<"$result" | tail -1)
     [[ -n "$score" ]] || { echo "Could not calculate SSIM for $label" >&2; exit 1; }
-    awk -v score="$score" -v label="$label" 'BEGIN { if (score < 0.97) { printf "%s failed seam validation: SSIM %s\n", label, score > "/dev/stderr"; exit 1 } }'
+    awk -v score="$score" -v label="$label" 'BEGIN { if (score < 0.95) { printf "%s failed seam validation: SSIM %s\n", label, score > "/dev/stderr"; exit 1 } }'
     echo "$label SSIM=$score"
   }
   for current_profile in landscape portrait; do

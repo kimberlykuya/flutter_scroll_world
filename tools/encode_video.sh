@@ -10,9 +10,9 @@ input=$1
 output=$2
 profile=${3:-desktop}
 if [ "$profile" = "mobile" ]; then
-  scale='scale=720:-2'; gop=4; crf=23
+  scale='scale=720:-2'; gop=1; crf=26
 else
-  scale='scale=1280:-2'; gop=8; crf=20
+  scale='scale=1280:-2'; gop=1; crf=26
 fi
 
 ffmpeg -hide_banner -y -i "$input" -vf "$scale" -an -c:v libx264 \

@@ -94,7 +94,7 @@ Inactive players pause. Paused, hidden, or detached applications release their c
 
 Use short MP4/H.264 clips encoded as `yuv420p`, without audio, with frequent keyframes and fast-start metadata. Portrait footage should be composed natively rather than center-cropped when possible. See the repository `tools` directory for scripts.
 
-Web media uses Blob-backed object URLs by default, matching the original Scroll World engine and remaining seekable on simple local servers without byte-range support. Blob mode downloads each nearby clip completely, so remote sources still require CORS. For large production media, select `ScrollWorldWebMediaStrategy.direct` and use a CDN with correct `video/mp4` MIME types, cache headers, CORS, and HTTP byte-range responses.
+Web media uses Blob-backed object URLs by default, matching the original Scroll World engine and remaining seekable on simple local servers without byte-range support. The web driver waits for a compositor-submitted frame, uses the browser's low-latency keyframe path, and corrects imprecise resting positions. All-intra media provides the smoothest exact scrub for compact onboarding clips; a short GOP remains the better size/quality tradeoff for large production footage. Blob mode downloads each nearby clip completely, so remote sources still require CORS. For large production media, select `ScrollWorldWebMediaStrategy.direct` and use a CDN with correct `video/mp4` MIME types, cache headers, CORS, and HTTP byte-range responses.
 
 ## Troubleshooting
 

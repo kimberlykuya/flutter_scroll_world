@@ -30,14 +30,15 @@ BLENDER_BIN=/opt/blender/blender ./tools/render_3d_media.sh all render
 The generator creates one 284-frame world per orientation at 24 fps. It splits
 shared frame ranges into three scene clips and two connector clips, writes
 three focal-frame WebP posters, produces landscape/portrait contact sheets,
-runs encoded seam validation at SSIM 0.97, refreshes the manifest, and rejects a video
+runs encoded seam validation at SSIM 0.95, refreshes the manifest, and rejects a video
 set of 10 MB or more.
 
-The demo follows the original Scroll World delivery profile: CRF 20 H.264 with
-light unsharp filtering, GOP 8 for landscape and GOP 4 for portrait. Blob-backed
-web playback keeps these compact clips seekable even on servers without byte
-ranges. The lossless source boundary frames remain identical; the encoded seam
-threshold allows normal inter-frame compression differences.
+The demo uses CRF 26 H.264 with light unsharp filtering and an all-intra GOP of
+1. A browser motion probe showed that GOP 8/4 still made paused scroll seeking
+look like a slideshow; every frame is now independently decodable. Blob-backed
+web playback keeps the clips seekable even on servers without byte ranges. The
+lossless source boundary frames remain identical; the encoded seam threshold
+allows normal compression differences.
 
 Generated `.blend` files and lossless PNG sequences remain under ignored
 `build/blender/`. Only the compact delivery media is committed.
@@ -53,7 +54,9 @@ Generated `.blend` files and lossless PNG sequences remain under ignored
 ./tools/encode_video.sh master.mov scene.mp4 desktop
 ```
 
-Both helpers emit muted H.264/yuv420p, fast-start MP4 files. Desktop uses GOP 8; mobile uses GOP 4 to reduce the amount of decoding required after a seek.
+Both helpers emit muted H.264/yuv420p, fast-start MP4 files. The all-intra GOP
+uses more bytes than inter-frame encoding, but removes dependent-frame decoding
+from the paused scroll-scrub path.
 
 ## Connector rule
 

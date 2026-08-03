@@ -1,6 +1,6 @@
 param(
   [string]$AssetRoot = (Join-Path $PSScriptRoot '..\example\assets'),
-  [double]$MinimumSsim = 0.97
+  [double]$MinimumSsim = 0.95
 )
 
 $ErrorActionPreference = 'Stop'

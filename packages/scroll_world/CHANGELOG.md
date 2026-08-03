@@ -11,3 +11,6 @@
   preparation, and optional first-gesture video priming.
 - Added scene actions, linger pacing, `ScrollWorldController`, and an
   interruptible reverse-replay experience with reduced-motion fallback.
+- Added a native HTML video surface on web that completes seeks only after a
+  compositor frame, uses low-latency keyframe seeking, and corrects imprecise
+  final positions for conventionally GOP-encoded footage.
