@@ -1,0 +1,34 @@
+name: padlo_poc
+description: Slovenian Padlo interactive positioning-coach proof of concept.
+publish_to: none
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.10.0 <4.0.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  go_router: ^17.3.0
+  scroll_world: ^0.1.0
+  shared_preferences: ^2.5.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/brand/
+    - assets/posters/
+    - assets/videos/
+  fonts:
+    - family: Epilogue
+      fonts:
+        - asset: assets/fonts/Epilogue-VariableFont_wght.ttf

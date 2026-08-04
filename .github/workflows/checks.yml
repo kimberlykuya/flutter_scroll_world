@@ -11,7 +11,7 @@ permissions:
 jobs:
   quality-and-builds:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -20,19 +20,27 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
-      - run: dart format --output=none --set-exit-if-changed packages/scroll_world/lib packages/scroll_world/test example/lib example/test example/integration_test tools/generate_manifest.dart
-      - run: python -m py_compile tools/blender/generate_kenya_world.py
-      - run: bash -n tools/render_3d_media.sh tools/encode_video.sh
+      - run: dart format --output=none --set-exit-if-changed packages/scroll_world/lib packages/scroll_world/test example/lib example/test example/integration_test examples/padlo_poc/lib examples/padlo_poc/test examples/padlo_poc/integration_test tools/generate_manifest.dart
+      - run: python -m py_compile tools/blender/generate_kenya_world.py tools/blender/generate_padlo_world.py
+      - run: bash -n tools/render_3d_media.sh tools/render_padlo_media.sh tools/encode_video.sh
       - run: flutter analyze
       - run: flutter test packages/scroll_world --coverage
       - run: flutter test example/test
+      - run: flutter test test
+        working-directory: examples/padlo_poc
       - run: dart run tools/generate_manifest.dart
       - run: git diff --exit-code -- example/assets/media_manifest.json
+      - run: dart run tools/generate_manifest.dart examples/padlo_poc/assets
+      - run: git diff --exit-code -- examples/padlo_poc/assets/media_manifest.json
       - run: dart pub -C packages/scroll_world publish --dry-run
       - run: flutter build web --release
         working-directory: example
+      - run: flutter build web --release --base-href /flutter_scroll_world/padlo/
+        working-directory: examples/padlo_poc
       - run: flutter build apk --debug
         working-directory: example
+      - run: flutter build apk --debug
+        working-directory: examples/padlo_poc
 
   ios-build:
     runs-on: macos-latest
@@ -47,3 +55,5 @@ jobs:
       - run: flutter pub get
       - run: flutter build ios --release --no-codesign
         working-directory: example
+      - run: flutter build ios --release --no-codesign
+        working-directory: examples/padlo_poc

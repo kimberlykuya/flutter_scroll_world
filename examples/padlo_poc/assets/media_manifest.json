@@ -1,0 +1,281 @@
+{
+  "assets": [
+    {
+      "path": "posters/net-depth.webp",
+      "bytes": 27156,
+      "sha256": "1ab39185f92f53885420bbb140cdea71cd53a46ad86a6739a7eefa36b28a2083"
+    },
+    {
+      "path": "posters/recovery.webp",
+      "bytes": 23640,
+      "sha256": "0b08fff1f2fe70978a1090ae157fb143ee76bc8dc4349e819204a17312902c79"
+    },
+    {
+      "path": "posters/see-court.webp",
+      "bytes": 27594,
+      "sha256": "f1e64532437568fd5312c2670691902dd4c437675c7cb797ef1679e2d9ce6ebf"
+    },
+    {
+      "path": "posters/spacing.webp",
+      "bytes": 12620,
+      "sha256": "d27be7c612b94171b751dc690f677891a57577a13bb75f8b00f5e43b943df595"
+    },
+    {
+      "path": "posters/transition.webp",
+      "bytes": 9730,
+      "sha256": "368907951129edc5d9394a4836e9c26e6b5d95849ecf16a0831005d486b490cd"
+    },
+    {
+      "path": "videos/net-depth-landscape.mp4",
+      "bytes": 847966,
+      "sha256": "30c5b4d78abc7301b1a61b5ef2278345c77f61a590709985817ba003d2ed80f0",
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 960,
+        "height": 540,
+        "avg_frame_rate": "24/1",
+        "duration": "2.500000"
+      },
+      "audio_streams": 0
+    },
+    {
+      "path": "videos/net-depth-portrait.mp4",
+      "bytes": 857179,
+      "sha256": "c21236e45417f7e59366928f1f795ebbe00bd3c5d2f66cfe5fcdd38a71b8040d",
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 540,
+        "height": 960,
+        "avg_frame_rate": "24/1",
+        "duration": "2.500000"
+      },
+      "audio_streams": 0
+    },
+    {
+      "path": "videos/net-depth-recovery-landscape.mp4",
+      "bytes": 333726,
+      "sha256": "855b770233b5bc45f2d36edfdeeb1a4e662e3078d248dbea407bd830ebe05f4f",
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 960,
+        "height": 540,
+        "avg_frame_rate": "24/1",
+        "duration": "1.000000"
+      },
+      "audio_streams": 0
+    },
+    {
+      "path": "videos/net-depth-recovery-portrait.mp4",
+      "bytes": 329766,
+      "sha256": "64db240fec4903ae4bcb55642e583b375a06f251164188ffd146cc1dba322723",
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 540,
+        "height": 960,
+        "avg_frame_rate": "24/1",
+        "duration": "1.000000"
+      },
+      "audio_streams": 0
+    },
+    {
+      "path": "videos/recovery-landscape.mp4",
+      "bytes": 800750,
+      "sha256": "7a19f36799d26c491cf9ec9875516b74677c773466d3079a5370d26d9894d378",
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 960,
+        "height": 540,
+        "avg_frame_rate": "24/1",
+        "duration": "2.500000"
+      },
+      "audio_streams": 0
+    },
+    {
+      "path": "videos/recovery-portrait.mp4",
+      "bytes": 816055,
+      "sha256": "7ddd1de03ea9e827256a35b2a66c354f2be4275bdced175ae45b1acadf685b92",
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 540,
+        "height": 960,
+        "avg_frame_rate": "24/1",
+        "duration": "2.500000"
+      },
+      "audio_streams": 0
+    },
+    {
+      "path": "videos/recovery-spacing-landscape.mp4",
+      "bytes": 291017,
+      "sha256": "f7a7c6b4280adcceeafd07b55eb4cbeda57263d3e74bce45a20e2404b9a19628",
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 960,
+        "height": 540,
+        "avg_frame_rate": "24/1",
+        "duration": "1.000000"
+      },
+      "audio_streams": 0
+    },
+    {
+      "path": "videos/recovery-spacing-portrait.mp4",
+      "bytes": 296036,
+      "sha256": "ab86cb3e201029d5123fba582fad34fc04d2d0c415ed48c826f77fb1c81c0d85",
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 540,
+        "height": 960,
+        "avg_frame_rate": "24/1",
+        "duration": "1.000000"
+      },
+      "audio_streams": 0
+    },
+    {
+      "path": "videos/see-court-landscape.mp4",
+      "bytes": 882698,
+      "sha256": "291a4c793e20074646f1982d61d8bb67f8b002315121e2eee75484c6a91100bb",
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 960,
+        "height": 540,
+        "avg_frame_rate": "24/1",
+        "duration": "2.500000"
+      },
+      "audio_streams": 0
+    },
+    {
+      "path": "videos/see-court-net-depth-landscape.mp4",
+      "bytes": 365637,
+      "sha256": "aa8db7ded506e00f225539beec61f616045f7bdd49a82121cd609d13474b38d7",
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 960,
+        "height": 540,
+        "avg_frame_rate": "24/1",
+        "duration": "1.000000"
+      },
+      "audio_streams": 0
+    },
+    {
+      "path": "videos/see-court-net-depth-portrait.mp4",
+      "bytes": 345228,
+      "sha256": "85e2968cc283b1b39774036182b1dba4daba28538dbc535d080f3407162c98bf",
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 540,
+        "height": 960,
+        "avg_frame_rate": "24/1",
+        "duration": "1.000000"
+      },
+      "audio_streams": 0
+    },
+    {
+      "path": "videos/see-court-portrait.mp4",
+      "bytes": 820821,
+      "sha256": "8abd4ca7254f2dde6678eb80fa65272395a27c4bdb92a5448497d4aab26f5c3b",
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 540,
+        "height": 960,
+        "avg_frame_rate": "24/1",
+        "duration": "2.500000"
+      },
+      "audio_streams": 0
+    },
+    {
+      "path": "videos/spacing-landscape.mp4",
+      "bytes": 571991,
+      "sha256": "ebaeac3dc7f0eafb2dd3caba29a6ff2a7105b352fe3e646120a854264eddab54",
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 960,
+        "height": 540,
+        "avg_frame_rate": "24/1",
+        "duration": "2.500000"
+      },
+      "audio_streams": 0
+    },
+    {
+      "path": "videos/spacing-portrait.mp4",
+      "bytes": 647994,
+      "sha256": "f087f2b187f68c466db710fb41ff947932dcde03a4ded52653023026bc0f7ede",
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 540,
+        "height": 960,
+        "avg_frame_rate": "24/1",
+        "duration": "2.500000"
+      },
+      "audio_streams": 0
+    },
+    {
+      "path": "videos/spacing-transition-landscape.mp4",
+      "bytes": 335354,
+      "sha256": "416afc5f8ac8ce5c3169711c5ff28db5c785963a1f460e7fc7480a7bf92f4698",
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 960,
+        "height": 540,
+        "avg_frame_rate": "24/1",
+        "duration": "1.000000"
+      },
+      "audio_streams": 0
+    },
+    {
+      "path": "videos/spacing-transition-portrait.mp4",
+      "bytes": 342341,
+      "sha256": "d77f84de7384ea254d139fa90e3e35d88fac2b3613a6feb42bac808956355d48",
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 540,
+        "height": 960,
+        "avg_frame_rate": "24/1",
+        "duration": "1.000000"
+      },
+      "audio_streams": 0
+    },
+    {
+      "path": "videos/transition-landscape.mp4",
+      "bytes": 706908,
+      "sha256": "92ceaacad3f690c47421635a355ba6b3ac742d96c9d5ae253791255418228815",
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 960,
+        "height": 540,
+        "avg_frame_rate": "24/1",
+        "duration": "2.500000"
+      },
+      "audio_streams": 0
+    },
+    {
+      "path": "videos/transition-portrait.mp4",
+      "bytes": 748036,
+      "sha256": "ffc4c0e0e55eb735eb838ed0868d1b39d123b16a67ac3845652cae5fbbd07e6e",
+      "video": {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 540,
+        "height": 960,
+        "avg_frame_rate": "24/1",
+        "duration": "2.500000"
+      },
+      "audio_streams": 0
+    }
+  ]
+}

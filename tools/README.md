@@ -69,3 +69,17 @@ Generate a connector from the preceding rendered clip's actual last frame and th
 ## Production web delivery
 
 Serve MP4 files with the correct MIME type, CORS policy, long-lived versioned cache headers, and byte-range support. Keep large production media outside Git and GitHub Pages; use a CDN-backed object store close to the intended audience, including an African region or edge network when serving Kenyan users.
+
+## Padlo Slovenia world
+
+`render_padlo_media.ps1` and `render_padlo_media.sh` run the independent Padlo
+Blender generator and encode its five scenes plus four connectors in landscape
+and portrait. The boundary ranges overlap by one frame, and
+`verify_padlo_seams.ps1` validates all sixteen encoded seams at SSIM `>=0.95`.
+
+```powershell
+.\tools\render_padlo_media.ps1 -Mode validate
+.\tools\render_padlo_media.ps1 -Mode preview
+.\tools\render_padlo_media.ps1 -Mode render
+dart run tools\generate_manifest.dart examples\padlo_poc\assets
+```

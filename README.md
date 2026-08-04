@@ -8,13 +8,27 @@ This repository now provides two complementary ways to build a scroll world:
 
 ## Flutter package quick start
 
-The repository is a Dart workspace containing the package in `packages/scroll_world` and the “Kenya in Motion” app in `example`.
+The repository is a Dart workspace containing the package in
+`packages/scroll_world`, the “Kenya in Motion” app in `example`, and the Padlo
+Slovenia product proof of concept in `examples/padlo_poc`.
 
 ```bash
 flutter pub get
 flutter test packages/scroll_world
 flutter run -d chrome -t example/lib/main.dart
+flutter run -d chrome -t examples/padlo_poc/lib/main.dart
 ```
+
+## Padlo Slovenia product proof of concept
+
+The second example proves that a Scroll World onboarding journey can hand off
+to real application surfaces. Five stylized 3D padel scenes lead into local
+registration, a responsive home dashboard, deterministic match analysis, a
+three-city report archive, and a tactical report for fictional Slovenian
+players. No recording is uploaded and no backend is used.
+
+See [`examples/padlo_poc/README.md`](examples/padlo_poc/README.md) for the flow,
+media pipeline, brand attribution, and local run commands.
 
 The example includes a deterministic, audio-free H.264 media set rendered from
 an original procedural Blender 5.2 LTS world. A stylized Nairobi skyline and

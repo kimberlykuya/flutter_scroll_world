@@ -11,3 +11,4 @@ dependencies:
 workspace:
   - packages/scroll_world
   - example
+  - examples/padlo_poc

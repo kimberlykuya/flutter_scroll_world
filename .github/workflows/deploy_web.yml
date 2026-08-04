@@ -30,9 +30,17 @@ jobs:
       - run: flutter test packages/scroll_world
       - run: flutter build web --release --base-href /flutter_scroll_world/
         working-directory: example
+      - run: flutter build web --release --base-href /flutter_scroll_world/padlo/
+        working-directory: examples/padlo_poc
+      - name: Assemble both examples
+        shell: bash
+        run: |
+          mkdir -p build/pages/padlo
+          cp -a example/build/web/. build/pages/
+          cp -a examples/padlo_poc/build/web/. build/pages/padlo/
       - uses: actions/upload-pages-artifact@v4
         with:
-          path: example/build/web
+          path: build/pages
 
   deploy:
     environment:
@@ -54,3 +62,11 @@ jobs:
             exit 1
           fi
           echo "Media probe returned HTTP $status (206 confirms byte-range support)."
+      - name: Probe Padlo app and media
+        shell: bash
+        run: |
+          root="${{ steps.deployment.outputs.page_url }}padlo/"
+          app_status=$(curl --retry 5 --retry-delay 3 --silent --output /dev/null --write-out '%{http_code}' "$root")
+          media_status=$(curl --retry 5 --retry-delay 3 --silent --output /dev/null --write-out '%{http_code}' --header 'Range: bytes=0-1023' "${root}assets/assets/videos/see-court-landscape.mp4")
+          [[ "$app_status" == "200" ]] || { echo "Padlo app returned $app_status"; exit 1; }
+          [[ "$media_status" == "200" || "$media_status" == "206" ]] || { echo "Padlo media returned $media_status"; exit 1; }
