@@ -25,6 +25,10 @@ void main() {
       );
       await store.register(profile);
       await store.markReportGenerated();
+      await store.completeChallenge('pressure-zone');
+      await store.completeChallenge('recover-first');
+      await store.selectReport(demoReports.last.id);
+      await store.setWorldCheckpoint('report-vault');
 
       final restored = PadloDemoStore();
       await restored.load();
@@ -32,11 +36,21 @@ void main() {
       expect(restored.onboardingComplete, isTrue);
       expect(restored.hasGeneratedReport, isTrue);
       expect(restored.reportById(featuredReport.id), same(featuredReport));
+      expect(
+        restored.completedChallenges,
+        containsAll(<String>['pressure-zone', 'recover-first']),
+      );
+      expect(restored.missionScore, 16);
+      expect(restored.selectedReportId, demoReports.last.id);
+      expect(restored.worldCheckpoint, 'report-vault');
 
       await restored.reset();
       expect(restored.isRegistered, isFalse);
       expect(restored.onboardingComplete, isFalse);
       expect(restored.hasGeneratedReport, isFalse);
+      expect(restored.completedChallenges, isEmpty);
+      expect(restored.selectedReportId, featuredReport.id);
+      expect(restored.worldCheckpoint, 'first-serve');
     },
   );
 

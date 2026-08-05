@@ -5,42 +5,70 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:padlo_poc/src/app.dart';
 import 'package:padlo_poc/src/models/demo_models.dart';
-import 'package:padlo_poc/src/screens/home_screen.dart';
-import 'package:padlo_poc/src/screens/onboarding_screen.dart';
-import 'package:padlo_poc/src/screens/report_detail_screen.dart';
 import 'package:padlo_poc/src/state/padlo_demo_store.dart';
-import 'package:padlo_poc/src/theme/padlo_theme.dart';
+import 'package:scroll_world/scroll_world.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-Future<PadloDemoStore> _store() async {
-  SharedPreferences.setMockInitialValues(<String, Object>{});
+const _profile = DemoPlayerProfile(
+  firstName: 'Luka',
+  lastName: 'Novak',
+  email: 'luka@example.com',
+  level: PlayerLevel.intermediate,
+  preferredSide: CourtSide.right,
+  focus: PositioningFocus.recoveryTiming,
+);
+
+Future<PadloDemoStore> _store(
+  String checkpoint, {
+  bool registered = true,
+}) async {
+  SharedPreferences.setMockInitialValues(<String, Object>{
+    'padlo_onboarding_complete': true,
+    if (registered) 'padlo_demo_profile': _profile.toJson(),
+    'padlo_world_checkpoint': checkpoint,
+    'padlo_generated_report': true,
+  });
   final store = PadloDemoStore();
   await store.load();
-  await store.register(
-    const DemoPlayerProfile(
-      firstName: 'Luka',
-      lastName: 'Novak',
-      email: 'luka@example.com',
-      level: PlayerLevel.intermediate,
-      preferredSide: CourtSide.right,
-      focus: PositioningFocus.recoveryTiming,
-    ),
-  );
   return store;
 }
 
-Widget _host(PadloDemoStore store, Widget child, {double textScale = 1}) =>
-    MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: buildPadloTheme(Brightness.light),
-      home: MediaQuery(
-        data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
-        child: PadloScope(
-          store: store,
-          child: Scaffold(body: child),
-        ),
-      ),
-    );
+Future<void> _pumpWorld(
+  WidgetTester tester, {
+  required Size size,
+  required String checkpoint,
+  bool registered = true,
+  double textScale = 1,
+}) async {
+  await tester.binding.setSurfaceSize(size);
+  addTearDown(() => tester.binding.setSurfaceSize(null));
+  final store = await _store(checkpoint, registered: registered);
+  await tester.pumpWidget(
+    PadloApp(
+      store: store,
+      disableAnimationsOverride: true,
+      textScalerOverride: TextScaler.linear(textScale),
+    ),
+  );
+  await tester.pump(const Duration(milliseconds: 300));
+  await tester.pump(const Duration(milliseconds: 100));
+  final worldContext = tester.element(find.byType(ScrollWorldView));
+  expect(MediaQuery.of(worldContext).disableAnimations, isTrue);
+  expect(find.byType(CircularProgressIndicator), findsNothing);
+  await tester.runAsync(
+    () async {
+      await precacheImage(
+        AssetImage('assets/posters/$checkpoint.webp'),
+        worldContext,
+      );
+      await precacheImage(
+        const AssetImage('assets/brand/padlo-logo.png'),
+        worldContext,
+      );
+    },
+  );
+  await tester.pump();
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -62,65 +90,54 @@ void main() {
     }
   });
 
-  testWidgets('mobile home golden', (tester) async {
-    await tester.binding.setSurfaceSize(const Size(390, 844));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    final store = await _store();
-    await tester.pumpWidget(_host(store, const HomeScreen()));
-    await tester.pumpAndSettle();
+  testWidgets('mobile player setup gate', (tester) async {
+    await _pumpWorld(
+      tester,
+      size: const Size(390, 844),
+      checkpoint: 'player-setup',
+      registered: false,
+    );
+    expect(find.text('Unlock your positioning room.'), findsOneWidget);
     await expectLater(
       find.byType(Scaffold),
-      matchesGoldenFile('goldens/home-mobile.png'),
+      matchesGoldenFile('goldens/world-player-setup-mobile.png'),
     );
   });
 
-  testWidgets('tablet home at 200 percent text golden', (tester) async {
-    await tester.binding.setSurfaceSize(const Size(834, 1194));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    final store = await _store();
-    await tester.pumpWidget(_host(store, const HomeScreen(), textScale: 2));
-    await tester.pumpAndSettle();
+  testWidgets('tablet clubhouse at 200 percent text', (tester) async {
+    await _pumpWorld(
+      tester,
+      size: const Size(834, 1194),
+      checkpoint: 'clubhouse',
+      textScale: 2,
+    );
     await expectLater(
       find.byType(Scaffold),
-      matchesGoldenFile('goldens/home-tablet-text-200.png'),
+      matchesGoldenFile('goldens/world-clubhouse-tablet-text-200.png'),
     );
   });
 
-  testWidgets('desktop tactical report golden', (tester) async {
-    await tester.binding.setSurfaceSize(const Size(1440, 1024));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    final store = await _store();
-    await tester.pumpWidget(
-      _host(store, ReportDetailScreen(reportId: featuredReport.id)),
+  testWidgets('desktop tactical replay arena', (tester) async {
+    await _pumpWorld(
+      tester,
+      size: const Size(1440, 1024),
+      checkpoint: 'replay-arena',
     );
-    await tester.pumpAndSettle();
     await expectLater(
       find.byType(Scaffold),
-      matchesGoldenFile('goldens/report-desktop.png'),
+      matchesGoldenFile('goldens/world-replay-desktop.png'),
     );
   });
 
-  testWidgets('reduced-motion final onboarding golden', (tester) async {
-    await tester.binding.setSurfaceSize(const Size(390, 844));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    tester.binding.platformDispatcher.accessibilityFeaturesTestValue =
-        const FakeAccessibilityFeatures(disableAnimations: true);
-    addTearDown(
-      tester.binding.platformDispatcher.clearAccessibilityFeaturesTestValue,
+  testWidgets('mobile profile locker', (tester) async {
+    await _pumpWorld(
+      tester,
+      size: const Size(390, 844),
+      checkpoint: 'profile-locker',
     );
-    final store = await _store();
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: buildPadloTheme(Brightness.light),
-        home: PadloScope(store: store, child: const OnboardingScreen()),
-      ),
-    );
-    await tester.pump();
-    await tester.sendKeyEvent(LogicalKeyboardKey.end);
-    await tester.pump();
     await expectLater(
       find.byType(Scaffold),
-      matchesGoldenFile('goldens/onboarding-final-reduced-motion.png'),
+      matchesGoldenFile('goldens/world-profile-mobile.png'),
     );
   });
 }

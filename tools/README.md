@@ -72,10 +72,10 @@ Serve MP4 files with the correct MIME type, CORS policy, long-lived versioned ca
 
 ## Padlo Slovenia world
 
-`render_padlo_media.ps1` and `render_padlo_media.sh` run the independent Padlo
-Blender generator and encode its five scenes plus four connectors in landscape
-and portrait. The boundary ranges overlap by one frame, and
-`verify_padlo_seams.ps1` validates all sixteen encoded seams at SSIM `>=0.95`.
+`render_padlo_media.ps1` and `render_padlo_media.sh` render one continuous,
+forward-only Padlo facility and cut it into ten 48-frame legs in landscape and
+native portrait. Each adjacent pair shares one source frame, and
+`verify_padlo_seams.ps1` validates all eighteen encoded seams at SSIM `>=0.98`.
 
 ```powershell
 .\tools\render_padlo_media.ps1 -Mode validate

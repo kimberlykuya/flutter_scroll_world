@@ -21,11 +21,13 @@ flutter run -d chrome -t examples/padlo_poc/lib/main.dart
 
 ## Padlo Slovenia product proof of concept
 
-The second example proves that a Scroll World onboarding journey can hand off
-to real application surfaces. Five stylized 3D padel scenes lead into local
-registration, a responsive home dashboard, deterministic match analysis, a
-three-city report archive, and a tactical report for fictional Slovenian
-players. No recording is uploaded and no backend is used.
+The second example is one continuous spatial product world. A forward-only
+camera moves through ten connected locations: the positioning court, tactical
+missions, player setup terminal, portal clubhouse, analysis court, report
+vault, tactical replay arena, and profile locker. Registration, reports, and
+controls are live Flutter content aligned over the Blender film—there is no
+post-onboarding dashboard switch. Existing hash routes address camera anchors
+without rebuilding the world. No recording is uploaded and no backend is used.
 
 See [`examples/padlo_poc/README.md`](examples/padlo_poc/README.md) for the flow,
 media pipeline, brand attribution, and local run commands.

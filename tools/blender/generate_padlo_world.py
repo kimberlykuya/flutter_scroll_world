@@ -1,8 +1,8 @@
-"""Generate the deterministic Padlo Slovenia onboarding world in Blender 5.2.
+"""Generate the deterministic Padlo spatial game world in Blender 5.2.
 
 The scene uses only Blender primitives and procedural materials. It contains a
-single continuous 388-frame journey. Scene and connector clips overlap at their
-boundary frames so the encoded seams remain visually identical.
+single continuous 480-frame, forward-only journey through one nighttime Padlo
+facility. The ten runtime clips are cut from this one camera film.
 
 Example:
   blender --background --factory-startup --python generate_padlo_world.py -- \
@@ -24,24 +24,30 @@ from mathutils import Vector
 
 SEED = 386
 FPS = 24
-FINAL_FRAME = 388
+FINAL_FRAME = 471
 SEGMENTS = {
-    "see-court": (1, 60),
-    "see-court-net-depth": (60, 83),
-    "net-depth": (83, 142),
-    "net-depth-recovery": (142, 165),
-    "recovery": (165, 224),
-    "recovery-spacing": (224, 247),
-    "spacing": (247, 306),
-    "spacing-transition": (306, 329),
-    "transition": (329, 388),
+    "first-serve": (1, 48),
+    "positioning-lab": (48, 95),
+    "decision-gate": (95, 142),
+    "player-tunnel": (142, 189),
+    "player-setup": (189, 236),
+    "clubhouse": (236, 283),
+    "analysis-court": (283, 330),
+    "report-vault": (330, 377),
+    "replay-arena": (377, 424),
+    "profile-locker": (424, 471),
 }
 FOCAL_FRAMES = {
-    "see-court": 36,
-    "net-depth": 112,
-    "recovery": 194,
-    "spacing": 276,
-    "transition": 360,
+    "first-serve": 30,
+    "positioning-lab": 77,
+    "decision-gate": 124,
+    "player-tunnel": 171,
+    "player-setup": 218,
+    "clubhouse": 265,
+    "analysis-court": 312,
+    "report-vault": 359,
+    "replay-arena": 406,
+    "profile-locker": 453,
 }
 
 
@@ -350,59 +356,87 @@ def build_players(m) -> list[bpy.types.Object]:
         build_player("Zan", m["skin_deep"], m["shirt_mint"], m["shorts_dark"], (-2.2, 5.8, 0.28)),
         build_player("Maja", m["skin_medium"], m["shirt_white"], m["shorts_blue"], (2.5, 6.2, 0.28)),
     ]
-    # Continuous movement across the five chapters.
+    # The same fictional Slovenian quartet remains present through the court
+    # chapters; movement is deterministic and never resets at a clip boundary.
     paths = [
-        [(1, (-2.5, -7.2, 0.28)), (60, (-1.7, -4.8, 0.28)), (83, (-2.4, -6.8, 0.28)), (142, (-2.1, -3.1, 0.28)), (165, (-2.0, -3.0, 0.28)), (194, (-3.0, -6.5, 0.28)), (224, (-2.0, -4.8, 0.28)), (247, (-3.9, -5.2, 0.28)), (276, (-2.1, -4.7, 0.28)), (306, (-2.0, -4.3, 0.28)), (329, (-2.1, -5.8, 0.28)), (388, (-1.8, -3.7, 0.28))],
-        [(1, (2.6, -6.3, 0.28)), (60, (2.0, -4.4, 0.28)), (83, (2.9, -7.0, 0.28)), (142, (2.3, -3.4, 0.28)), (165, (2.5, -3.5, 0.28)), (194, (3.2, -6.0, 0.28)), (224, (2.4, -4.4, 0.28)), (247, (4.1, -5.1, 0.28)), (276, (2.2, -4.6, 0.28)), (306, (2.0, -4.4, 0.28)), (329, (2.2, -5.6, 0.28)), (388, (2.0, -3.8, 0.28))],
-        [(1, (-2.2, 6.0, 0.28)), (83, (-2.0, 5.0, 0.28)), (165, (-2.4, 6.2, 0.28)), (247, (-2.2, 4.7, 0.28)), (329, (-2.0, 5.4, 0.28)), (388, (-2.5, 4.0, 0.28))],
-        [(1, (2.4, 6.4, 0.28)), (83, (2.2, 5.4, 0.28)), (165, (2.5, 6.0, 0.28)), (247, (2.6, 4.8, 0.28)), (329, (2.2, 5.5, 0.28)), (388, (2.4, 4.2, 0.28))],
+        [(1, (-2.5, -7.2, 0.28)), (48, (-1.8, -4.8, 0.28)), (96, (-2.1, -3.1, 0.28)), (144, (-2.9, -5.8, 0.28)), (240, (-2.0, -4.5, 0.28)), (336, (-1.6, -3.4, 0.28)), (432, (-2.4, -4.8, 0.28)), (480, (-1.8, -3.7, 0.28))],
+        [(1, (2.6, -6.3, 0.28)), (48, (2.0, -4.4, 0.28)), (96, (2.3, -3.4, 0.28)), (144, (3.1, -5.6, 0.28)), (240, (2.3, -4.3, 0.28)), (336, (1.9, -3.5, 0.28)), (432, (2.6, -4.6, 0.28)), (480, (2.0, -3.8, 0.28))],
+        [(1, (-2.2, 6.0, 0.28)), (96, (-2.0, 4.8, 0.28)), (240, (-2.4, 5.6, 0.28)), (336, (-2.0, 4.2, 0.28)), (480, (-2.5, 4.0, 0.28))],
+        [(1, (2.4, 6.4, 0.28)), (96, (2.2, 5.1, 0.28)), (240, (2.5, 5.8, 0.28)), (336, (2.2, 4.4, 0.28)), (480, (2.4, 4.2, 0.28))],
     ]
     for player, path in zip(players, paths):
         animate_location(player, path)
     return players
 
 
+def build_spatial_facility(m) -> None:
+    """Build one connected court, tunnel, hub, vault, arena and locker."""
+    # A luminous spine makes the direction of travel legible at every cut.
+    box("Facility_spine", (0, 31, -0.02), (7.2, 31.0, 0.14), m["facility"], bevel=0.5)
+    for y in range(12, 63, 4):
+        box(f"Spine_light_{y}", (0, y, 0.18), (0.07, 1.45, 0.025), m["blue_glow"], bevel=0.03)
+    # Glass tunnel ribs physically connect the court to every product location.
+    for y in range(12, 61, 4):
+        for x in (-6.6, 6.6):
+            cylinder(f"Tunnel_post_{x}_{y}", (x, y, 2.5), 0.07, 5.0, m["frame"], vertices=10)
+        box(f"Tunnel_arch_{y}", (0, y, 5.0), (6.65, 0.07, 0.08), m["frame"], bevel=0.03)
+
+    # Player setup terminal: the blank surface is reserved for live Flutter UI.
+    box("Setup_terminal_body", (-3.2, 16.7, 2.35), (3.0, 0.42, 2.45), m["ink"], bevel=0.35)
+    box("Setup_terminal_screen", (-3.2, 16.22, 2.55), (2.6, 0.04, 1.85), m["screen"], bevel=0.22)
+    box("Setup_terminal_plinth", (-3.2, 17.1, 0.42), (3.5, 1.2, 0.35), m["platform"], bevel=0.25)
+
+    # Clubhouse portals are physical doors, never dashboard cards.
+    for index, (x, label_color) in enumerate(((-4.8, m["blue_glow"]), (-1.6, m["coral_glow"]), (1.6, m["gold_glow"]), (4.8, m["blue_glow"]))):
+        box(f"Portal_frame_{index}", (x, 25.5, 2.2), (1.35, 0.25, 2.2), m["frame"], bevel=0.2)
+        box(f"Portal_light_{index}", (x, 25.18, 2.2), (1.05, 0.04, 1.78), label_color, bevel=0.16)
+    box("Clubhouse_scoreboard", (0, 22.5, 4.8), (4.1, 0.18, 0.8), m["screen"], bevel=0.18)
+
+    # Analysis scanner court and live path rails.
+    box("Analysis_court", (0, 32.0, 0.18), (5.0, 5.0, 0.08), m["court"], bevel=0.08)
+    for x in (-4.6, -1.5, 1.5, 4.6):
+        tube(f"Scanner_beam_{x}", [(x, 28.0, 0.3), (x * 0.55, 32.0, 1.2), (x, 36.0, 0.3)], 0.07, m["blue_glow"])
+    box("Analysis_score_surface", (-4.0, 36.8, 3.2), (2.3, 0.12, 1.55), m["screen"], bevel=0.24)
+
+    # Trophy wall with three selectable city tokens.
+    box("Vault_wall", (-3.5, 41.5, 2.8), (2.6, 0.35, 2.8), m["ink"], bevel=0.3)
+    for index, x in enumerate((-3.5, 0, 3.5)):
+        cylinder(f"Match_token_{index}", (x, 41.05, 2.65), 1.05, 0.18, m["gold_glow"] if index == 0 else m["blue_glow"], vertices=32, rotation=(math.pi / 2, 0, 0))
+        box(f"Match_token_slot_{index}", (x, 41.2, 0.72), (1.25, 0.3, 0.22), m["platform"], bevel=0.15)
+
+    # Replay arena: a miniature court suspended inside the same building.
+    box("Replay_plinth", (0, 49.0, 1.05), (5.8, 5.0, 0.8), m["platform"], bevel=0.45)
+    box("Replay_court", (0, 49.0, 1.9), (4.5, 4.1, 0.06), m["court"], bevel=0.08)
+    for x, y in ((-2.4, 47.0), (2.1, 47.4), (-2.0, 51.0), (2.5, 51.4)):
+        sphere(f"Replay_marker_{x}_{y}", (x, y, 2.15), (0.25, 0.25, 0.25), m["coral_glow"] if y > 50 else m["blue_glow"], segments=12, rings=6)
+    tube("Replay_heat_path", [(-3.5, 46.2, 2.12), (-1.5, 48.5, 2.3), (0.2, 50.0, 2.15), (3.4, 52.0, 2.18)], 0.12, m["coral_glow"])
+
+    # Locker wall closes the journey and hosts live profile controls.
+    box("Locker_room_wall", (0, 59.0, 3.0), (6.3, 0.4, 3.0), m["ink"], bevel=0.3)
+    for index, x in enumerate((-4.5, -2.25, 0, 2.25, 4.5)):
+        box(f"Locker_{index}", (x, 58.5, 2.7), (0.92, 0.08, 2.2), m["frame"], bevel=0.12)
+        box(f"Locker_signal_{index}", (x, 58.38, 3.7), (0.42, 0.025, 0.08), m["coral_glow"] if index == 2 else m["blue_glow"], bevel=0.03)
+
+
 def build_analytics(m) -> None:
-    # Scene 2: coral error band and blue pressure band.
     coral_zone = box("Net_depth_error_zone", (0, -5.9, 0.24), (4.65, 1.25, 0.035), m["coral_transparent"], bevel=0.18)
     blue_zone = box("Net_depth_pressure_zone", (0, -3.05, 0.25), (4.65, 1.15, 0.04), m["blue_glow"], bevel=0.18)
-    show_between(coral_zone, 83, 150)
-    show_between(blue_zone, 96, 160)
-
-    # Scene 3: late coral recovery versus corrected blue path.
+    show_between(coral_zone, 35, 108)
+    show_between(blue_zone, 48, 118)
     late_path = tube("Late_recovery_path", [(-2.1, -3.0, 0.35), (-3.4, -4.6, 0.45), (-3.0, -6.5, 0.35)], 0.11, m["coral_glow"])
     correct_path = tube("Correct_recovery_path", [(-2.0, -3.0, 0.38), (-2.25, -4.0, 0.48), (-2.0, -4.8, 0.38)], 0.11, m["blue_glow"])
-    show_between(late_path, 165, 215)
-    show_between(correct_path, 182, 235)
-
-    # Scene 4: the partner gap closes to a safe distance.
-    gap_bad = tube("Spacing_gap_bad", [(-4.0, -5.0, 1.1), (4.1, -5.0, 1.1)], 0.07, m["coral_glow"])
+    show_between(late_path, 55, 126)
+    show_between(correct_path, 72, 144)
     gap_good = tube("Spacing_gap_good", [(-2.1, -4.65, 1.15), (2.2, -4.65, 1.15)], 0.09, m["blue_glow"])
-    show_between(gap_bad, 247, 275)
-    show_between(gap_good, 270, 315)
-
-    # Scene 5: three decisions converge on a clean attacking shape.
+    show_between(gap_good, 72, 150)
     attack = tube("Decision_attack", [(-3.8, -7.2, 0.4), (-3.1, -5.0, 0.5), (-2.0, -3.6, 0.4)], 0.1, m["blue_glow"])
     hold = tube("Decision_hold", [(0.0, -7.2, 0.42), (0.0, -5.6, 0.48), (0.0, -4.5, 0.42)], 0.1, m["gold_glow"])
     recover = tube("Decision_recover", [(3.8, -4.0, 0.4), (3.2, -5.3, 0.5), (2.3, -6.7, 0.4)], 0.1, m["coral_glow"])
     for obj in (attack, hold, recover):
-        show_between(obj, 329, 388)
+        show_between(obj, 95, 155)
 
-    ball = sphere("Padel_ball", (0, 0, 1.5), (0.12, 0.12, 0.12), m["ball"], segments=14, rings=8)
-    animate_location(
-        ball,
-        [
-            (1, (-3.2, -4.0, 1.1)),
-            (36, (0.0, 1.0, 4.8)),
-            (60, (3.2, 4.5, 1.0)),
-            (112, (-1.4, 0.0, 3.2)),
-            (165, (-2.0, -1.0, 4.7)),
-            (194, (2.5, 2.0, 1.2)),
-            (276, (0.0, 0.2, 3.6)),
-            (360, (-1.0, 0.0, 4.2)),
-            (388, (2.3, 3.5, 1.0)),
-        ],
-    )
+    ball = sphere("Padel_ball", (0, 0, 1.5), (0.105, 0.105, 0.105), m["ball"], segments=18, rings=10)
+    animate_location(ball, [(1, (-3.2, -6.0, 1.1)), (48, (2.4, -2, 4.4)), (95, (-2.5, 2, 1.2)), (142, (2.3, 8, 2.8)), (189, (-2.4, 14, 3.0)), (236, (2.5, 22, 3.0)), (283, (-2.5, 30, 3.0)), (330, (2.4, 39, 3.2)), (377, (-2.5, 47, 3.0)), (424, (2.4, 55, 3.0)), (471, (-2.0, 59, 4.4))])
 
 
 def setup_camera(profile: str) -> None:
@@ -419,26 +453,37 @@ def setup_camera(profile: str) -> None:
     constraint.track_axis = "TRACK_NEGATIVE_Z"
     constraint.up_axis = "UP_Y"
 
+    # Every key advances along +Y. Small lateral arcs add drama without ever
+    # reversing the journey or breaking spatial continuity.
     landscape = [
-        (1, (15.5, -21.0, 16.0), (0.0, 0.0, 1.0)),
-        (60, (10.0, -15.0, 8.0), (0.0, -1.0, 1.0)),
-        (83, (10.5, -16.0, 10.5), (0.0, -4.5, 0.9)),
-        (112, (9.0, -14.0, 9.2), (0.0, -3.8, 0.8)),
-        (142, (6.5, -14.5, 9.5), (0.0, -3.6, 0.7)),
-        (165, (-10.5, -15.0, 10.2), (-1.5, -4.7, 1.0)),
-        (194, (-9.5, -13.5, 9.6), (-1.2, -4.2, 0.8)),
-        (224, (-6.0, -14.0, 10.0), (0.0, -4.8, 0.8)),
-        (247, (0.0, -15.0, 10.8), (0.0, -4.5, 0.6)),
-        (276, (0.0, -12.0, 13.0), (0.0, -4.3, 0.5)),
-        (306, (5.0, -12.0, 9.0), (0.0, -4.0, 0.7)),
-        (329, (9.5, -14.0, 11.0), (0.0, -2.0, 0.8)),
-        (360, (0.0, -2.0, 28.5), (0.0, 0.0, 0.0)),
-        (388, (-9.0, -13.0, 10.5), (0.0, -2.5, 0.7)),
+        (1, (7.5, -24.0, 9.5), (0.0, -12.0, 1.2)),
+        (30, (5.8, -18.0, 7.1), (0.0, -7.0, 1.0)),
+        (48, (4.5, -14.0, 6.2), (0.0, -4.0, 1.1)),
+        (77, (-4.2, -9.0, 5.4), (0.0, -1.0, 1.0)),
+        (95, (-4.0, -6.0, 5.1), (0.0, 2.0, 1.0)),
+        (124, (3.8, -2.0, 4.8), (0.0, 5.0, 1.2)),
+        (142, (4.8, 1.0, 4.7), (0.0, 9.0, 1.4)),
+        (160, (6.0, 8.5, 4.4), (0.0, 15.0, 2.4)),
+        (171, (3.8, 10.5, 4.2), (-3.2, 16.5, 2.5)),
+        (189, (3.6, 11.5, 4.1), (-3.2, 16.5, 2.5)),
+        (218, (3.4, 12.2, 3.8), (-3.2, 16.5, 2.5)),
+        (236, (5.6, 14.0, 4.0), (0.0, 20.0, 2.4)),
+        (250, (6.1, 19.0, 4.2), (0.0, 25.0, 2.3)),
+        (265, (4.5, 20.2, 4.3), (0.0, 25.5, 2.2)),
+        (283, (5.8, 24.0, 4.5), (0.0, 30.0, 1.8)),
+        (312, (6.0, 27.0, 5.4), (0.0, 32.0, 1.3)),
+        (330, (5.8, 32.0, 4.5), (0.0, 38.0, 2.2)),
+        (359, (5.5, 34.5, 4.5), (0.0, 41.5, 2.6)),
+        (377, (6.0, 39.0, 4.8), (0.0, 46.0, 2.2)),
+        (406, (6.0, 43.0, 6.4), (0.0, 49.0, 1.9)),
+        (424, (6.0, 47.0, 5.4), (0.0, 54.0, 2.4)),
+        (453, (5.5, 52.0, 4.5), (0.0, 59.0, 2.8)),
+        (471, (5.4, 54.0, 4.2), (0.0, 59.0, 2.8)),
     ]
     positions = []
     for frame, location, focus in landscape:
         if profile == "portrait":
-            positions.append((frame, (location[0] * 0.55, location[1] - 4.5, location[2] + 7.0), (focus[0] * 0.72, focus[1], focus[2] + 0.35)))
+            positions.append((frame, (location[0] * 0.42, location[1] - 1.8, location[2] + 2.8), (focus[0] * 0.55, focus[1], focus[2] + 0.45)))
         else:
             positions.append((frame, location, focus))
     for frame, location, focus in positions:
@@ -452,12 +497,14 @@ def configure_scene(profile: str, output: Path) -> None:
     scene = bpy.context.scene
     scene.render.engine = "BLENDER_EEVEE"
     scene.render.resolution_x, scene.render.resolution_y = ((960, 540) if profile == "landscape" else (540, 960))
-    scene.render.resolution_percentage = 100
+    # Runtime portrait media is 405x720; rendering that composition directly
+    # avoids spending minutes compressing pixels that the encoder discards.
+    scene.render.resolution_percentage = 100 if profile == "landscape" else 75
     scene.render.fps = FPS
     scene.render.image_settings.file_format = "PNG"
     scene.render.image_settings.color_mode = "RGB"
     scene.render.image_settings.color_depth = "8"
-    scene.render.image_settings.compression = 35
+    scene.render.image_settings.compression = 0
     scene.render.film_transparent = False
     scene.frame_start = 1
     scene.frame_end = FINAL_FRAME
@@ -466,29 +513,29 @@ def configure_scene(profile: str, output: Path) -> None:
     scene.render.filepath = str(output / profile / "frames" / "frame_")
     scene.world.use_nodes = True
     background = scene.world.node_tree.nodes.get("Background")
-    background.inputs["Color"].default_value = rgba("#A9C4DB")
-    background.inputs["Strength"].default_value = 0.48
+    background.inputs["Color"].default_value = rgba("#050713")
+    background.inputs["Strength"].default_value = 0.12
     try:
         scene.view_settings.look = "AgX - Medium High Contrast"
     except TypeError:
         pass
 
     sun_data = bpy.data.lights.new(name="Adriatic_sun", type="SUN")
-    sun_data.energy = 3.0
-    sun_data.color = rgba("#FFD5A3")[:3]
+    sun_data.energy = 1.2
+    sun_data.color = rgba("#6E8CFF")[:3]
     sun_data.angle = math.radians(14)
     sun = bpy.data.objects.new(name="Adriatic_sun", object_data=sun_data)
     bpy.context.collection.objects.link(sun)
     sun.rotation_euler = (math.radians(33), math.radians(-18), math.radians(-28))
 
     area_data = bpy.data.lights.new(name="Court_fill", type="AREA")
-    area_data.energy = 950
+    area_data.energy = 1250
     area_data.shape = "RECTANGLE"
     area_data.size = 16
     area_data.color = rgba("#BBC3F3")[:3]
     area = bpy.data.objects.new(name="Court_fill", object_data=area_data)
     bpy.context.collection.objects.link(area)
-    area.location = (0, -2, 12)
+    area.location = (0, 18, 13)
     area.rotation_euler = (0, 0, 0)
 
 
@@ -496,19 +543,21 @@ def build_world(profile: str, output: Path) -> None:
     random.seed(SEED)
     clear_scene()
     mats = {
-        "court": material("Court blue", "#243FD9", roughness=0.72),
-        "platform": material("Court surround", "#E9ECFB", roughness=0.82),
-        "land": material("Slovenian green", "#567D59", roughness=0.9),
+        "court": material("Court blue", "#162D91", roughness=0.62, emission=0.08),
+        "platform": material("Court surround", "#202A43", roughness=0.72, metallic=0.12),
+        "facility": material("Facility floor", "#090D18", roughness=0.5, metallic=0.25),
+        "screen": material("Blank live surface", "#111A33", roughness=0.35, metallic=0.18, emission=0.12),
+        "land": material("Slovenian night green", "#152D2A", roughness=0.9),
         "white": material("White", "#F8FAFF"),
         "ink": material("Ink", "#14181B"),
         "net": material("Net", "#252B38", roughness=0.8, alpha=0.78),
         "frame": material("Padlo frame", "#2139C5", metallic=0.25),
         "glass": material("Glass", "#A7D6E8", roughness=0.12, alpha=0.28),
         "light": material("Court light", "#FFF3D7", emission=2.2),
-        "mountain": material("Alpine deep", "#607A79"),
-        "mountain_light": material("Alpine light", "#8DA6A0"),
-        "building": material("Ljubljana stone", "#D6D0C7"),
-        "window": material("Window", "#5B7F99", metallic=0.08),
+        "mountain": material("Alpine deep", "#101B2A"),
+        "mountain_light": material("Alpine light", "#172C3C"),
+        "building": material("Ljubljana stone", "#192337"),
+        "window": material("Window", "#6E8CFF", metallic=0.08, emission=0.35),
         "wood": material("Tree wood", "#6D4D3C"),
         "pine": material("Pine", "#295F4A"),
         "pine_light": material("Pine light", "#477B58"),
@@ -536,6 +585,7 @@ def build_world(profile: str, output: Path) -> None:
     build_court(mats)
     build_slovenian_horizon(mats)
     build_players(mats)
+    build_spatial_facility(mats)
     build_analytics(mats)
     setup_camera(profile)
     configure_scene(profile, output)
@@ -554,6 +604,12 @@ def validate(profile: str, output: Path) -> dict:
         "Late_recovery_path",
         "Spacing_gap_good",
         "Decision_attack",
+        "Setup_terminal_screen",
+        "Clubhouse_scoreboard",
+        "Analysis_court",
+        "Vault_wall",
+        "Replay_court",
+        "Locker_room_wall",
     ]
     missing = [name for name in required if name not in scene.objects]
     polygons = sum(len(obj.data.polygons) for obj in scene.objects if obj.type == "MESH")

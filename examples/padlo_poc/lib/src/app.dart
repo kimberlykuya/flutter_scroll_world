@@ -5,9 +5,16 @@ import 'state/padlo_demo_store.dart';
 import 'theme/padlo_theme.dart';
 
 final class PadloApp extends StatefulWidget {
-  const PadloApp({required this.store, super.key});
+  const PadloApp({
+    required this.store,
+    this.disableAnimationsOverride,
+    this.textScalerOverride,
+    super.key,
+  });
 
   final PadloDemoStore store;
+  final bool? disableAnimationsOverride;
+  final TextScaler? textScalerOverride;
 
   @override
   State<PadloApp> createState() => _PadloAppState();
@@ -33,6 +40,17 @@ final class _PadloAppState extends State<PadloApp> {
       darkTheme: buildPadloTheme(Brightness.dark),
       themeMode: ThemeMode.system,
       routerConfig: router,
+      builder: (context, child) {
+        final media = MediaQuery.of(context);
+        return MediaQuery(
+          data: media.copyWith(
+            disableAnimations:
+                widget.disableAnimationsOverride ?? media.disableAnimations,
+            textScaler: widget.textScalerOverride ?? media.textScaler,
+          ),
+          child: child!,
+        );
+      },
     ),
   );
 }

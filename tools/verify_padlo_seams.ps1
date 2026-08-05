@@ -1,6 +1,6 @@
 param(
   [string]$AssetRoot = (Join-Path $PSScriptRoot '..\examples\padlo_poc\assets'),
-  [double]$MinimumSsim = 0.95
+  [double]$MinimumSsim = 0.98
 )
 
 $ErrorActionPreference = 'Stop'
@@ -29,21 +29,23 @@ function Compare-Seam([string]$Left, [string]$Right, [string]$Label) {
 
 try {
   $pairs = @(
-    @('see-court','net-depth'),
-    @('net-depth','recovery'),
-    @('recovery','spacing'),
-    @('spacing','transition')
+    @('first-serve','positioning-lab'),
+    @('positioning-lab','decision-gate'),
+    @('decision-gate','player-tunnel'),
+    @('player-tunnel','player-setup'),
+    @('player-setup','clubhouse'),
+    @('clubhouse','analysis-court'),
+    @('analysis-court','report-vault'),
+    @('report-vault','replay-arena'),
+    @('replay-arena','profile-locker')
   )
   foreach ($profile in @('landscape','portrait')) {
     foreach ($pair in $pairs) {
       $from = Join-Path $videoDir "$($pair[0])-$profile.mp4"
-      $connector = Join-Path $videoDir "$($pair[0])-$($pair[1])-$profile.mp4"
       $to = Join-Path $videoDir "$($pair[1])-$profile.mp4"
       $a = Join-Path $temporary 'a.png'; $b = Join-Path $temporary 'b.png'
-      Extract $from $a $true; Extract $connector $b $false
-      Compare-Seam $a $b "$($pair[0])->connector ($profile)"
-      Extract $connector $a $true; Extract $to $b $false
-      Compare-Seam $a $b "connector->$($pair[1]) ($profile)"
+      Extract $from $a $true; Extract $to $b $false
+      Compare-Seam $a $b "$($pair[0])->$($pair[1]) ($profile)"
     }
   }
 } finally {

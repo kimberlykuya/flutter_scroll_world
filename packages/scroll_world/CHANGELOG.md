@@ -14,3 +14,6 @@
 - Added a native HTML video surface on web that completes seeks only after a
   compositor frame, uses low-latency keyframe seeking, and corrects imprecise
   final positions for conventionally GOP-encoded footage.
+- Added full-stage `sceneContentBuilder` frames, declarative interaction
+  regions, scroll gates, exact scene-progress navigation, and pre-render deep
+  linking while keeping existing scene usage backward compatible.

@@ -80,6 +80,23 @@ Provide `overlayBuilder` when title and description are not enough. Scene action
 
 `ScrollWorldController` can navigate by stable scene ID, jump without animation, cancel programmatic movement, or replay the current journey in reverse. Replay is interruptible by pointer, wheel, keyboard, and navigation input.
 
+### Full-stage interactive scenes and gates
+
+Use `sceneContentBuilder` for controls that must occupy and track the entire
+camera stage. It receives a `ScrollWorldSceneFrame` with raw and linger-mapped
+media progress, scene visibility, travel direction, overall progress, motion
+state, and reduced-motion state. `interactionRegion` declares when that live
+content accepts input.
+
+Set `gateAt` to prevent forward travel beyond a scene progress point. Release
+or restore it with `ScrollWorldController.openGate` and `resetGate`. The
+controller also exposes `activeSceneProgress`, and its navigation methods accept
+an exact `sceneProgress`. `initialSceneId` plus `initialSceneProgress` positions
+deep links before the first visible frame, including under reduced motion.
+
+These APIs are additive: existing overlays, actions, simple scenes, custom
+drivers, and externally supplied scroll controllers behave unchanged.
+
 Implement `ScrollVideoDriverFactory` to use another player or a fake. Custom drivers can optionally implement `ScrollVideoPrimingDriver` when their platform needs a user gesture before a sought frame can paint.
 
 ## Accessibility and lifecycle

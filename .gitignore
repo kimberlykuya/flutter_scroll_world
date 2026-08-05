@@ -9,6 +9,7 @@ __pycache__/
 .packages
 build/
 coverage/
+**/test/failures/
 doc/
 **/build/
 **/.dart_tool/

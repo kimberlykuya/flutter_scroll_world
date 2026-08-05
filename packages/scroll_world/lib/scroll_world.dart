@@ -7,6 +7,7 @@ export 'src/models/scroll_world_action.dart';
 export 'src/models/scroll_world_configuration.dart';
 export 'src/models/scroll_world_error.dart';
 export 'src/models/scroll_world_scene.dart';
+export 'src/models/scroll_world_scene_frame.dart';
 export 'src/models/scroll_world_source.dart';
 export 'src/models/scroll_world_theme.dart';
 export 'src/playback/scroll_video_driver.dart';

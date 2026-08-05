@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -13,6 +14,7 @@ import '../models/scroll_world_action.dart';
 import '../models/scroll_world_configuration.dart';
 import '../models/scroll_world_error.dart';
 import '../models/scroll_world_scene.dart';
+import '../models/scroll_world_scene_frame.dart';
 import '../models/scroll_world_source.dart';
 import '../models/scroll_world_theme.dart';
 import '../models/scroll_world_timeline.dart';
@@ -29,6 +31,8 @@ typedef ScrollWorldOverlayBuilder =
     );
 typedef ScrollWorldSceneChangedCallback =
     void Function(ScrollWorldScene scene, int index);
+typedef ScrollWorldSceneContentBuilder =
+    Widget Function(BuildContext context, ScrollWorldSceneFrame frame);
 typedef ScrollWorldActionCallback =
     FutureOr<void> Function(ScrollWorldScene scene, ScrollWorldAction action);
 typedef ScrollWorldActionBuilder =
@@ -49,6 +53,7 @@ final class ScrollWorldView extends StatefulWidget {
     this.controller,
     this.driverFactory,
     this.overlayBuilder,
+    this.sceneContentBuilder,
     this.actionBuilder,
     this.emptyBuilder,
     this.onSceneChanged,
@@ -57,6 +62,9 @@ final class ScrollWorldView extends StatefulWidget {
     this.onDebugSnapshot,
     this.onAction,
     this.onMotionStateChanged,
+    this.initialSceneId,
+    this.initialSceneProgress = 0.5,
+    this.openedGateIds = const <String>{},
     super.key,
   });
 
@@ -67,6 +75,7 @@ final class ScrollWorldView extends StatefulWidget {
   final ScrollWorldController? controller;
   final ScrollVideoDriverFactory? driverFactory;
   final ScrollWorldOverlayBuilder? overlayBuilder;
+  final ScrollWorldSceneContentBuilder? sceneContentBuilder;
   final ScrollWorldActionBuilder? actionBuilder;
   final WidgetBuilder? emptyBuilder;
   final ScrollWorldSceneChangedCallback? onSceneChanged;
@@ -75,6 +84,9 @@ final class ScrollWorldView extends StatefulWidget {
   final ValueChanged<ScrollWorldDriverDebugSnapshot>? onDebugSnapshot;
   final ScrollWorldActionCallback? onAction;
   final ValueChanged<ScrollWorldMotionState>? onMotionStateChanged;
+  final String? initialSceneId;
+  final double initialSceneProgress;
+  final Set<String> openedGateIds;
 
   @override
   State<ScrollWorldView> createState() => _ScrollWorldViewState();
@@ -102,6 +114,10 @@ final class _ScrollWorldViewState extends State<ScrollWorldView>
   Timer? _scrollIdleTimer;
   bool _primed = false;
   bool _replayButtonLocked = false;
+  bool _correctingGate = false;
+  bool _initialPositionApplied = false;
+  late Set<String> _openedGateIds;
+  ScrollWorldDirection _direction = ScrollWorldDirection.stationary;
   late Duration _poolSeekTolerance;
 
   bool get _ownsScrollController => widget.scrollController == null;
@@ -121,6 +137,8 @@ final class _ScrollWorldViewState extends State<ScrollWorldView>
     super.initState();
     widget.configuration.validate();
     _timeline = ScrollWorldTimeline.compile(widget.scenes);
+    _openedGateIds = Set<String>.of(widget.openedGateIds);
+    _setInitialLogicalOffset();
     _scrollController = widget.scrollController ?? ScrollController();
     _scrollController.addListener(_handleScroll);
     _journeyController = widget.controller ?? ScrollWorldController();
@@ -137,6 +155,16 @@ final class _ScrollWorldViewState extends State<ScrollWorldView>
     if (!listEquals(oldWidget.scenes, widget.scenes)) {
       _timeline = ScrollWorldTimeline.compile(widget.scenes);
       _activeSceneIndex = -1;
+      _initialPositionApplied = false;
+      _setInitialLogicalOffset();
+    }
+    if (!setEquals(oldWidget.openedGateIds, widget.openedGateIds)) {
+      _openedGateIds = Set<String>.of(widget.openedGateIds);
+    }
+    if (oldWidget.initialSceneId != widget.initialSceneId ||
+        oldWidget.initialSceneProgress != widget.initialSceneProgress) {
+      _initialPositionApplied = false;
+      _setInitialLogicalOffset();
     }
     if (oldWidget.scrollController != widget.scrollController) {
       _scrollController.removeListener(_handleScroll);
@@ -196,6 +224,9 @@ final class _ScrollWorldViewState extends State<ScrollWorldView>
       jumpToScene: _jumpToSceneById,
       replayReverse: _replayReverse,
       cancelMotion: _cancelProgrammaticMotion,
+      openGate: _openGate,
+      resetGate: _resetGate,
+      isGateOpen: _openedGateIds.contains,
     );
     _updateJourneyController();
   }
@@ -210,35 +241,100 @@ final class _ScrollWorldViewState extends State<ScrollWorldView>
 
   void _updateJourneyController() {
     final frame = _currentFrame;
+    final sceneProgress = frame == null ? 0.0 : _sceneProgress(frame);
     _journeyController.update(
       overallProgress: frame?.overallProgress ?? 0,
+      activeSceneProgress: sceneProgress,
       activeSceneId: frame == null
           ? null
           : widget.scenes[frame.activeSceneIndex].id,
       motionState: _motionState,
+      direction: _direction,
     );
+  }
+
+  void _setInitialLogicalOffset() {
+    final sceneId = widget.initialSceneId;
+    if (sceneId == null || widget.scenes.isEmpty) return;
+    if (!widget.initialSceneProgress.isFinite ||
+        widget.initialSceneProgress < 0 ||
+        widget.initialSceneProgress > 1) {
+      throw ArgumentError.value(
+        widget.initialSceneProgress,
+        'initialSceneProgress',
+        'must be between zero and one',
+      );
+    }
+    final index = widget.scenes.indexWhere((scene) => scene.id == sceneId);
+    if (index < 0) {
+      throw ArgumentError.value(sceneId, 'initialSceneId', 'not found');
+    }
+    final offset = _timeline.sceneOffset(
+      index,
+      progress: widget.initialSceneProgress,
+    );
+    _displayedLogicalOffset = offset;
+    _targetLogicalOffset = offset;
   }
 
   Future<void> _animateToSceneById(
     String sceneId,
+    double sceneProgress,
     Duration? duration,
     Curve? curve,
   ) async {
     final index = widget.scenes.indexWhere((scene) => scene.id == sceneId);
     if (index < 0) throw ArgumentError.value(sceneId, 'sceneId', 'not found');
     await _animateToLogicalOffset(
-      _timeline.sceneMidpoint(index),
+      _timeline.sceneOffset(index, progress: sceneProgress),
       duration: duration ?? widget.configuration.navigationDuration,
       curve: curve ?? Curves.easeInOutCubic,
       state: ScrollWorldMotionState.navigating,
     );
   }
 
-  void _jumpToSceneById(String sceneId) {
+  void _jumpToSceneById(String sceneId, double sceneProgress) {
     final index = widget.scenes.indexWhere((scene) => scene.id == sceneId);
     if (index < 0) throw ArgumentError.value(sceneId, 'sceneId', 'not found');
     _cancelProgrammaticMotion();
-    _jumpToLogicalOffset(_timeline.sceneMidpoint(index));
+    _jumpToLogicalOffset(_timeline.sceneOffset(index, progress: sceneProgress));
+  }
+
+  void _openGate(String sceneId) {
+    if (!widget.scenes.any(
+      (scene) => scene.id == sceneId && scene.gateAt != null,
+    )) {
+      throw ArgumentError.value(
+        sceneId,
+        'sceneId',
+        'does not identify a gated scene',
+      );
+    }
+    if (_openedGateIds.add(sceneId)) {
+      _updateJourneyController();
+      if (mounted) setState(() {});
+    }
+  }
+
+  void _resetGate(String sceneId) {
+    if (_openedGateIds.remove(sceneId)) {
+      _updateJourneyController();
+      if (mounted) setState(() {});
+    }
+  }
+
+  double _applyForwardGate(double desired) {
+    if (desired <= _displayedLogicalOffset) return desired;
+    for (var index = 0; index < widget.scenes.length; index++) {
+      final scene = widget.scenes[index];
+      final gate = scene.gateAt;
+      if (gate == null || _openedGateIds.contains(scene.id)) continue;
+      final gateOffset = _timeline.sceneOffset(index, progress: gate);
+      if (_displayedLogicalOffset <= gateOffset && desired > gateOffset) {
+        return gateOffset;
+      }
+    }
+    return desired;
   }
 
   Future<void> _replayReverse(Duration? duration, Curve? curve) async {
@@ -269,6 +365,11 @@ final class _ScrollWorldViewState extends State<ScrollWorldView>
     final generation = ++_motionGeneration;
     _programmaticMotion = true;
     _setMotionState(state);
+    final gatedOffset = _applyForwardGate(logicalOffset);
+    if (gatedOffset != logicalOffset) {
+      _direction = ScrollWorldDirection.forward;
+    }
+    logicalOffset = gatedOffset;
     final target = (logicalOffset * _viewportHeight).clamp(
       0.0,
       _scrollController.position.maxScrollExtent,
@@ -301,6 +402,7 @@ final class _ScrollWorldViewState extends State<ScrollWorldView>
 
   void _jumpToLogicalOffset(double logicalOffset) {
     if (!_scrollController.hasClients || _viewportHeight <= 0) return;
+    logicalOffset = _applyForwardGate(logicalOffset);
     final target = (logicalOffset * _viewportHeight).clamp(
       0.0,
       _scrollController.position.maxScrollExtent,
@@ -329,13 +431,45 @@ final class _ScrollWorldViewState extends State<ScrollWorldView>
     unawaited(_pool.primeAll());
   }
 
+  void _handlePointerSignal(PointerSignalEvent event) {
+    _handleUserInput();
+    if (event is! PointerScrollEvent || !_scrollController.hasClients) return;
+
+    // Interactive scene content is painted above the internal scroll track.
+    // When the pointer is over a form, button, or portal, that track is not in
+    // the hit-test path and would otherwise never receive mouse-wheel input.
+    // The resolver preserves the normal Scrollable handler when it is present;
+    // this callback only wins when an overlay intercepted the signal.
+    GestureBinding.instance.pointerSignalResolver.register(event, (
+      resolvedEvent,
+    ) {
+      if (resolvedEvent is! PointerScrollEvent ||
+          !_scrollController.hasClients) {
+        return;
+      }
+      _scrollController.position.pointerScroll(resolvedEvent.scrollDelta.dy);
+    });
+  }
+
   void _handleScroll() {
     if (!mounted) return;
     if (_viewportHeight <= 0 || !_scrollController.hasClients) return;
-    _targetLogicalOffset = (_scrollController.offset / _viewportHeight).clamp(
+    final rawTarget = (_scrollController.offset / _viewportHeight).clamp(
       0.0,
       _timeline.totalExtent,
     );
+    final gatedTarget = _applyForwardGate(rawTarget);
+    _direction = gatedTarget > _displayedLogicalOffset
+        ? ScrollWorldDirection.forward
+        : gatedTarget < _displayedLogicalOffset
+        ? ScrollWorldDirection.reverse
+        : ScrollWorldDirection.stationary;
+    _targetLogicalOffset = gatedTarget;
+    if (!_correctingGate && gatedTarget < rawTarget) {
+      _correctingGate = true;
+      _scrollController.jumpTo(gatedTarget * _viewportHeight);
+      _correctingGate = false;
+    }
     if (_reducedMotion || widget.configuration.smoothingFactor == 1) {
       _displayedLogicalOffset = _targetLogicalOffset;
       setState(() {});
@@ -347,6 +481,7 @@ final class _ScrollWorldViewState extends State<ScrollWorldView>
       _scrollIdleTimer?.cancel();
       _scrollIdleTimer = Timer(const Duration(milliseconds: 120), () {
         if (!_programmaticMotion && !_smoothingTicker.isActive) {
+          _direction = ScrollWorldDirection.stationary;
           _setMotionState(ScrollWorldMotionState.idle);
         }
       });
@@ -361,6 +496,7 @@ final class _ScrollWorldViewState extends State<ScrollWorldView>
       _displayedLogicalOffset = _targetLogicalOffset;
       _smoothingTicker.stop();
       if (!_programmaticMotion) _setMotionState(ScrollWorldMotionState.idle);
+      if (!_programmaticMotion) _direction = ScrollWorldDirection.stationary;
     } else {
       _displayedLogicalOffset = interpolateScrollProgress(
         displayed: _displayedLogicalOffset,
@@ -397,8 +533,13 @@ final class _ScrollWorldViewState extends State<ScrollWorldView>
     final frame = _currentFrame;
     if (frame == null) return;
     _reportScene(frame.activeSceneIndex);
+    _updateJourneyController();
 
     if (_reducedMotion) {
+      if (_reportedLoading) {
+        _reportedLoading = false;
+        widget.onLoadingChanged?.call(false);
+      }
       if (!_releaseScheduled) {
         _releaseScheduled = true;
         unawaited(
@@ -429,7 +570,6 @@ final class _ScrollWorldViewState extends State<ScrollWorldView>
     _pool.reconcile(desired);
     _seekMediaKeys(desired.keys);
     _reportLoading();
-    _updateJourneyController();
   }
 
   void _seekNearbyMedia() {
@@ -531,8 +671,10 @@ final class _ScrollWorldViewState extends State<ScrollWorldView>
       _displayedLogicalOffset = logicalOffset;
     }
     if (reducedMotion) {
-      _targetLogicalOffset = logicalOffset;
-      _displayedLogicalOffset = logicalOffset;
+      if (_initialPositionApplied || widget.initialSceneId == null) {
+        _targetLogicalOffset = logicalOffset;
+        _displayedLogicalOffset = logicalOffset;
+      }
       _smoothingTicker.stop();
     }
     if (!changed) return;
@@ -554,6 +696,14 @@ final class _ScrollWorldViewState extends State<ScrollWorldView>
         final max = _scrollController.position.maxScrollExtent;
         _scrollController.jumpTo((logicalOffset * size.height).clamp(0.0, max));
       }
+      if (!_initialPositionApplied && _scrollController.hasClients) {
+        _initialPositionApplied = true;
+        final target = (_targetLogicalOffset * size.height).clamp(
+          0.0,
+          _scrollController.position.maxScrollExtent,
+        );
+        _scrollController.jumpTo(target);
+      }
       _syncPlayback();
     });
   }
@@ -571,11 +721,16 @@ final class _ScrollWorldViewState extends State<ScrollWorldView>
       _jumpToLogicalOffset(_timeline.sceneMidpoint(index));
       return;
     }
-    await _animateToSceneById(widget.scenes[index].id, null, null);
+    await _animateToSceneById(widget.scenes[index].id, 0.5, null, null);
   }
 
   KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent || !_scrollController.hasClients) {
+      return KeyEventResult.ignored;
+    }
+    final focusContext = FocusManager.instance.primaryFocus?.context;
+    if (focusContext?.widget is EditableText ||
+        focusContext?.findAncestorWidgetOfExactType<EditableText>() != null) {
       return KeyEventResult.ignored;
     }
     final key = event.logicalKey;
@@ -596,7 +751,11 @@ final class _ScrollWorldViewState extends State<ScrollWorldView>
     }
     if (target == null) return KeyEventResult.ignored;
     _handleUserInput();
-    _scrollController.jumpTo(target.clamp(0.0, position.maxScrollExtent));
+    final logicalTarget = _applyForwardGate(
+      target.clamp(0.0, position.maxScrollExtent) /
+          math.max(_viewportHeight, 1),
+    );
+    _scrollController.jumpTo(logicalTarget * _viewportHeight);
     _targetLogicalOffset =
         _scrollController.offset / math.max(_viewportHeight, 1);
     _displayedLogicalOffset = _targetLogicalOffset;
@@ -650,7 +809,7 @@ final class _ScrollWorldViewState extends State<ScrollWorldView>
             );
         return Listener(
           onPointerDown: (_) => _handleUserInput(),
-          onPointerSignal: (_) => _handleUserInput(),
+          onPointerSignal: _handlePointerSignal,
           child: ColoredBox(
             color: widget.theme.backgroundColor,
             child: Focus(
@@ -667,6 +826,8 @@ final class _ScrollWorldViewState extends State<ScrollWorldView>
                     ),
                   ),
                   _buildScrollTrack(size.height),
+                  if (widget.sceneContentBuilder != null)
+                    _buildSceneContent(context, frame),
                   _buildOverlay(context, frame),
                   if (_reportedLoading)
                     const IgnorePointer(
@@ -711,6 +872,45 @@ final class _ScrollWorldViewState extends State<ScrollWorldView>
                 entry.driver.buildView(fit: widget.configuration.fit),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSceneContent(BuildContext context, ScrollWorldFrame frame) {
+    final sceneIndex = frame.activeSceneIndex;
+    final scene = widget.scenes[sceneIndex];
+    final rawProgress = _sceneProgress(frame);
+    final sceneSegment = _timeline.sceneSegment(sceneIndex);
+    final mediaProgress = sceneSegment.mediaProgressAt(
+      sceneSegment.start + sceneSegment.extent * rawProgress,
+    );
+    var visibility = frame.segment.kind == ScrollWorldSegmentKind.scene
+        ? 1.0
+        : 0.0;
+    for (final layer in frame.layers) {
+      if (layer.mediaKey.kind == ScrollWorldMediaKind.scene &&
+          layer.mediaKey.index == sceneIndex) {
+        visibility = math.max(visibility, layer.opacity);
+      }
+    }
+    final sceneFrame = ScrollWorldSceneFrame(
+      scene: scene,
+      sceneIndex: sceneIndex,
+      rawProgress: rawProgress,
+      mediaProgress: mediaProgress,
+      visibility: visibility,
+      overallProgress: frame.overallProgress,
+      direction: _direction,
+      motionState: _motionState,
+      reducedMotion: _reducedMotion,
+    );
+    return Positioned.fill(
+      child: IgnorePointer(
+        ignoring: !sceneFrame.isInteractive,
+        child: Opacity(
+          opacity: visibility.clamp(0.0, 1.0),
+          child: widget.sceneContentBuilder!(context, sceneFrame),
         ),
       ),
     );

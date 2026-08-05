@@ -11,6 +11,9 @@ ScrollWorldScene scene(
   double transitionExtent = 0.5,
   bool connector = false,
   double linger = 0,
+  ScrollWorldInteractionRegion interactionRegion =
+      const ScrollWorldInteractionRegion(),
+  double? gateAt,
   List<ScrollWorldAction> actions = const <ScrollWorldAction>[],
 }) => ScrollWorldScene(
   id: id,
@@ -22,6 +25,8 @@ ScrollWorldScene scene(
       ? const ScrollWorldSources(webStandard: source)
       : null,
   linger: linger,
+  interactionRegion: interactionRegion,
+  gateAt: gateAt,
   actions: actions,
 );
 
@@ -195,6 +200,36 @@ void main() {
       expect(
         () => ScrollWorldTimeline.compile(<ScrollWorldScene>[
           scene('one', transitionExtent: 0, linger: 0.7),
+        ]),
+        throwsArgumentError,
+      );
+    });
+
+    test('maps explicit scene progress and validates interaction gates', () {
+      final timeline = ScrollWorldTimeline.compile(<ScrollWorldScene>[
+        scene('one', scrollExtent: 2, gateAt: 0.6),
+        scene('two', scrollExtent: 3, transitionExtent: 0),
+      ]);
+
+      expect(timeline.sceneOffset(0, progress: 0), 0);
+      expect(timeline.sceneOffset(0, progress: 0.6), 1.2);
+      expect(timeline.sceneOffset(1, progress: 0.25), 3.25);
+      expect(
+        () => ScrollWorldTimeline.compile(<ScrollWorldScene>[
+          scene('bad', gateAt: 1, transitionExtent: 0),
+        ]),
+        throwsArgumentError,
+      );
+      expect(
+        () => ScrollWorldTimeline.compile(<ScrollWorldScene>[
+          scene(
+            'bad-region',
+            transitionExtent: 0,
+            interactionRegion: const ScrollWorldInteractionRegion(
+              start: 0.8,
+              end: 0.4,
+            ),
+          ),
         ]),
         throwsArgumentError,
       );

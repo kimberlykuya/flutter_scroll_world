@@ -15,23 +15,30 @@ final class PadloLogo extends StatelessWidget {
   Widget build(BuildContext context) => Semantics(
     image: true,
     label: 'Padlo',
-    child: ColorFiltered(
-      colorFilter: light
-          ? const ColorFilter.mode(Colors.white, BlendMode.srcIn)
-          : const ColorFilter.mode(Colors.transparent, BlendMode.dst),
-      child: Image.asset(
-        'assets/brand/padlo-logo.png',
-        height: height,
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) => Text(
-          'padlo',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            color: light ? Colors.white : PadloTokens.ink,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -1.5,
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        ClipRRect(
+          borderRadius: BorderRadius.circular(height * 0.24),
+          child: Image.asset(
+            'assets/brand/padlo-logo.png',
+            width: height,
+            height: height,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) =>
+                const SizedBox.shrink(),
           ),
         ),
-      ),
+        SizedBox(width: height * 0.28),
+        Text(
+          'PADLO',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            color: light ? Colors.white : PadloTokens.ink,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.1,
+          ),
+        ),
+      ],
     ),
   );
 }

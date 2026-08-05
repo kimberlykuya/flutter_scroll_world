@@ -40,32 +40,36 @@ $videoDir = Join-Path $assets 'videos'
 $posterDir = Join-Path $assets 'posters'
 New-Item -ItemType Directory -Force -Path $videoDir,$posterDir | Out-Null
 $segments = @(
-  @{ Name='see-court'; Start=1; Count=60; Focal=36 },
-  @{ Name='see-court-net-depth'; Start=60; Count=24 },
-  @{ Name='net-depth'; Start=83; Count=60; Focal=112 },
-  @{ Name='net-depth-recovery'; Start=142; Count=24 },
-  @{ Name='recovery'; Start=165; Count=60; Focal=194 },
-  @{ Name='recovery-spacing'; Start=224; Count=24 },
-  @{ Name='spacing'; Start=247; Count=60; Focal=276 },
-  @{ Name='spacing-transition'; Start=306; Count=24 },
-  @{ Name='transition'; Start=329; Count=60; Focal=360 }
+  @{ Name='first-serve'; Start=1; Count=48; Focal=30 },
+  @{ Name='positioning-lab'; Start=48; Count=48; Focal=77 },
+  @{ Name='decision-gate'; Start=95; Count=48; Focal=124 },
+  @{ Name='player-tunnel'; Start=142; Count=48; Focal=171 },
+  @{ Name='player-setup'; Start=189; Count=48; Focal=218 },
+  @{ Name='clubhouse'; Start=236; Count=48; Focal=265 },
+  @{ Name='analysis-court'; Start=283; Count=48; Focal=312 },
+  @{ Name='report-vault'; Start=330; Count=48; Focal=359 },
+  @{ Name='replay-arena'; Start=377; Count=48; Focal=406 },
+  @{ Name='profile-locker'; Start=424; Count=48; Focal=453 }
 )
 
 foreach ($current in $profiles) {
   $frames = Join-Path $output "$current\frames\frame_%04d.png"
+  # yuv420p requires even dimensions; 404 is the nearest valid width to the
+  # native 405 px portrait composition.
+  $scale = if ($current -eq 'landscape') { 'scale=720:404,pad=720:406:0:1:black' } else { 'scale=404:720' }
   foreach ($segment in $segments) {
     Invoke-Checked 'ffmpeg' @(
       '-hide_banner','-loglevel','error','-y','-framerate','24',
       '-start_number',"$($segment.Start)",'-i',$frames,'-frames:v',"$($segment.Count)",
-      '-an','-vf','unsharp=5:5:0.45:5:5:0.0','-c:v','libx264','-preset','slow',
-      '-crf','26','-pix_fmt','yuv420p','-g','1','-keyint_min','1','-sc_threshold','0',
+      '-an','-vf',"$scale,unsharp=5:5:0.35:5:5:0.0",'-c:v','libx264','-preset','slow',
+      '-qp','33','-pix_fmt','yuv420p','-g','1','-keyint_min','1','-sc_threshold','0',
       '-movflags','+faststart',(Join-Path $videoDir "$($segment.Name)-$current.mp4")
     )
   }
 }
 
 if ($profiles -contains 'landscape') {
-  foreach ($segment in $segments | Where-Object { $_.ContainsKey('Focal') }) {
+  foreach ($segment in $segments) {
     $source = Join-Path $output ("landscape\frames\frame_{0:D4}.png" -f $segment.Focal)
     Invoke-Checked 'ffmpeg' @(
       '-hide_banner','-loglevel','error','-y','-i',$source,

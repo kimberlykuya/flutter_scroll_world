@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,27 +17,71 @@ Future<PadloDemoStore> _loadedStore(Map<String, Object> values) async {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('mock registration unlocks the Slovenian home dashboard', (
+  setUp(() {
+    TestWidgetsFlutterBinding
+        .instance
+        .platformDispatcher
+        .accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(
+      disableAnimations: true,
+    );
+  });
+
+  tearDown(
+    () => TestWidgetsFlutterBinding.instance.platformDispatcher
+        .clearAccessibilityFeaturesTestValue(),
+  );
+
+  testWidgets('world HUD follows the active scene while scrolling', (
+    tester,
+  ) async {
+    final store = await _loadedStore(<String, Object>{});
+    await tester.pumpWidget(PadloApp(store: store));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+
+    expect(find.text('1 / 10'), findsOneWidget);
+    final position = tester.getCenter(
+      find.text('Read the point before it happens.'),
+    );
+    for (var index = 0; index < 3; index++) {
+      await tester.sendEventToBinding(
+        PointerScrollEvent(
+          position: position,
+          scrollDelta: const Offset(0, 600),
+        ),
+      );
+      await tester.pump();
+    }
+    await tester.pump(const Duration(milliseconds: 250));
+
+    expect(find.text('2 / 10'), findsOneWidget);
+  });
+
+  testWidgets('player setup is an in-world gate and unlocks the clubhouse', (
     tester,
   ) async {
     final store = await _loadedStore(<String, Object>{
       'padlo_onboarding_complete': true,
     });
     await tester.pumpWidget(PadloApp(store: store));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
 
-    expect(find.text('Set up your court view'), findsOneWidget);
+    expect(find.text('Unlock your positioning room.'), findsOneWidget);
+    expect(find.byKey(const Key('create-demo-account')), findsOneWidget);
     await tester.ensureVisible(find.byKey(const Key('create-demo-account')));
-    await tester.pumpAndSettle();
+    await tester.pump();
     await tester.tap(find.byKey(const Key('create-demo-account')));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
 
-    expect(find.text('Dobrodošel, Luka.'), findsOneWidget);
-    expect(find.text('Your Slovenian match trail'), findsOneWidget);
     expect(store.isRegistered, isTrue);
+    expect(find.textContaining('Luka'), findsWidgets);
+    expect(find.text('Analysis court'), findsOneWidget);
+    expect(find.text('Report vault'), findsOneWidget);
   });
 
-  testWidgets('deterministic analysis reaches the featured report', (
+  testWidgets('clubhouse portal launches deterministic court analysis', (
     tester,
   ) async {
     const profile = DemoPlayerProfile(
@@ -52,44 +97,35 @@ void main() {
       'padlo_demo_profile': profile.toJson(),
     });
     await tester.pumpWidget(PadloApp(store: store));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
 
-    await tester.tap(find.byIcon(Icons.videocam_outlined).first);
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byKey(const Key('analyze-demo-match')));
-    await tester.pumpAndSettle();
+    await tester.tap(find.text('Analysis court'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(find.byKey(const Key('analyze-demo-match')), findsOneWidget);
+
     await tester.tap(find.byKey(const Key('analyze-demo-match')));
-    await tester.pump(const Duration(milliseconds: 2200));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Your Ljubljana report is ready'), findsOneWidget);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1100));
     expect(store.hasGeneratedReport, isTrue);
-    await tester.tap(find.text('Open positioning report'));
-    await tester.pumpAndSettle();
-    expect(find.text('Four signals. One clear priority.'), findsOneWidget);
-    expect(find.textContaining('Kovač'), findsOneWidget);
+    expect(find.text('Enter the replay arena'), findsOneWidget);
   });
 
-  testWidgets('reduced-motion onboarding exposes final actions', (
+  testWidgets('protected deep link lands at the non-bypassable setup gate', (
     tester,
   ) async {
-    tester.binding.platformDispatcher.accessibilityFeaturesTestValue =
-        const FakeAccessibilityFeatures(disableAnimations: true);
-    addTearDown(
-      tester.binding.platformDispatcher.clearAccessibilityFeaturesTestValue,
-    );
-    final store = await _loadedStore(<String, Object>{});
+    final store = await _loadedStore(<String, Object>{
+      'padlo_onboarding_complete': true,
+      'padlo_world_checkpoint': 'replay-arena',
+    });
     await tester.pumpWidget(PadloApp(store: store));
     await tester.pump();
-
     await tester.sendKeyEvent(LogicalKeyboardKey.end);
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 150));
 
-    expect(find.text('Create demo account'), findsOneWidget);
-    expect(find.text('Replay the tour'), findsOneWidget);
-    expect(
-      find.bySemanticsLabel('Replay the Padlo positioning tour backwards'),
-      findsOneWidget,
-    );
+    expect(store.isRegistered, isFalse);
+    expect(find.text('Unlock your positioning room.'), findsOneWidget);
+    expect(find.byKey(const Key('create-demo-account')), findsOneWidget);
   });
 }

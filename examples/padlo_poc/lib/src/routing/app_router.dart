@@ -1,65 +1,35 @@
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
-import '../screens/home_screen.dart';
-import '../screens/onboarding_screen.dart';
-import '../screens/profile_screen.dart';
-import '../screens/record_screen.dart';
-import '../screens/registration_screen.dart';
-import '../screens/report_detail_screen.dart';
-import '../screens/reports_screen.dart';
+import '../screens/padlo_world_screen.dart';
 import '../state/padlo_demo_store.dart';
-import '../widgets/padlo_shell.dart';
 
 GoRouter buildPadloRouter(PadloDemoStore store) => GoRouter(
-  initialLocation: store.isRegistered
-      ? '/app/home'
-      : store.onboardingComplete
-      ? '/register'
-      : '/onboarding',
+  initialLocation: _initialLocation(store),
   refreshListenable: store,
   routes: <RouteBase>[
-    GoRoute(
-      path: '/onboarding',
-      builder: (context, state) => const OnboardingScreen(),
-    ),
-    GoRoute(
-      path: '/register',
-      builder: (context, state) =>
-          RegistrationScreen(returnPath: state.uri.queryParameters['from']),
-    ),
+    GoRoute(path: '/', redirect: (context, state) => '/onboarding'),
     ShellRoute(
-      builder: (context, state, child) =>
-          PadloShell(currentLocation: state.uri.path, child: child),
+      builder: (context, state, child) => PadloWorldScreen(
+        routeLocation: state.uri.toString(),
+        routeChild: child,
+      ),
       routes: <RouteBase>[
-        GoRoute(
-          path: '/app/home',
-          pageBuilder: (context, state) => _fadePage(state, const HomeScreen()),
-        ),
-        GoRoute(
-          path: '/app/record',
-          pageBuilder: (context, state) =>
-              _fadePage(state, const RecordScreen()),
-        ),
-        GoRoute(
-          path: '/app/reports',
-          pageBuilder: (context, state) =>
-              _fadePage(state, const ReportsScreen()),
+        _worldRoute('/onboarding'),
+        _worldRoute('/register'),
+        _worldRoute('/app/home'),
+        _worldRoute('/app/record'),
+        _worldRoute(
+          '/app/reports',
           routes: <RouteBase>[
             GoRoute(
               path: ':reportId',
-              pageBuilder: (context, state) => _fadePage(
-                state,
-                ReportDetailScreen(reportId: state.pathParameters['reportId']!),
-              ),
+              pageBuilder: (context, state) =>
+                  const NoTransitionPage<void>(child: SizedBox.shrink()),
             ),
           ],
         ),
-        GoRoute(
-          path: '/app/profile',
-          pageBuilder: (context, state) =>
-              _fadePage(state, const ProfileScreen()),
-        ),
+        _worldRoute('/app/profile'),
       ],
     ),
   ],
@@ -71,17 +41,31 @@ GoRouter buildPadloRouter(PadloDemoStore store) => GoRouter(
         queryParameters: <String, String>{'from': state.uri.path},
       ).toString();
     }
-    if (state.uri.path == '/') {
-      return store.isRegistered ? '/app/home' : '/onboarding';
-    }
     return null;
   },
 );
 
-CustomTransitionPage<void> _fadePage(GoRouterState state, Widget child) =>
-    CustomTransitionPage<void>(
-      key: state.pageKey,
-      child: child,
-      transitionsBuilder: (context, animation, secondaryAnimation, child) =>
-          FadeTransition(opacity: animation, child: child),
-    );
+String _initialLocation(PadloDemoStore store) {
+  if (!store.isRegistered) {
+    return store.onboardingComplete ? '/register' : '/onboarding';
+  }
+  return switch (store.worldCheckpoint) {
+    'player-setup' => '/register',
+    'clubhouse' => '/app/home',
+    'analysis-court' => '/app/record',
+    'report-vault' => '/app/reports',
+    'replay-arena' => '/app/reports/${store.selectedReportId}',
+    'profile-locker' => '/app/profile',
+    _ => '/app/home',
+  };
+}
+
+GoRoute _worldRoute(
+  String path, {
+  List<RouteBase> routes = const <RouteBase>[],
+}) => GoRoute(
+  path: path,
+  routes: routes,
+  pageBuilder: (context, state) =>
+      const NoTransitionPage<void>(child: SizedBox.shrink()),
+);

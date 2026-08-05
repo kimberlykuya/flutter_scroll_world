@@ -145,6 +145,15 @@ final class ScrollWorldTimeline {
           'must be between zero and 0.6',
         );
       }
+      scene.interactionRegion.validate(scene.id);
+      if (scene.gateAt case final gate?
+          when !gate.isFinite || gate <= 0 || gate >= 1) {
+        throw ArgumentError.value(
+          gate,
+          'scene.gateAt',
+          'must be finite, greater than zero, and less than one',
+        );
+      }
       final actionIds = <String>{};
       for (final action in scene.actions) {
         if (action.id.trim().isEmpty || action.label.trim().isEmpty) {
@@ -235,6 +244,18 @@ final class ScrollWorldTimeline {
   final List<ScrollWorldScene> scenes;
   final List<ScrollWorldSegment> segments;
   final double totalExtent;
+
+  double sceneOffset(int sceneIndex, {double progress = 0.5}) {
+    if (!progress.isFinite || progress < 0 || progress > 1) {
+      throw ArgumentError.value(
+        progress,
+        'progress',
+        'must be between 0 and 1',
+      );
+    }
+    final segment = sceneSegment(sceneIndex);
+    return segment.start + segment.extent * progress;
+  }
 
   ScrollWorldFrame sampleAt(
     double offset, {

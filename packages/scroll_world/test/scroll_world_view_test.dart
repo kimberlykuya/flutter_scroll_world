@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -112,6 +113,51 @@ void main() {
     expect(snapshot?.initializedCount, lessThanOrEqualTo(3));
   });
 
+  testWidgets('wheel scrolling continues over interactive scene content', (
+    tester,
+  ) async {
+    final controller = ScrollWorldController();
+    final scrollController = ScrollController();
+    await tester.pumpWidget(
+      host(
+        child: ScrollWorldView(
+          scenes: testScenes(),
+          controller: controller,
+          scrollController: scrollController,
+          driverFactory: FakeDriverFactory(),
+          configuration: const ScrollWorldConfiguration(smoothingFactor: 1),
+          sceneContentBuilder: (context, frame) => Material(
+            color: Colors.transparent,
+            child: Center(
+              child: FilledButton(
+                onPressed: () {},
+                child: const Text('Interactive portal'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final position = tester.getCenter(find.text('Interactive portal'));
+    for (var index = 0; index < 3; index++) {
+      await tester.sendEventToBinding(
+        PointerScrollEvent(
+          position: position,
+          scrollDelta: const Offset(0, 600),
+        ),
+      );
+      await tester.pump();
+    }
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(scrollController.offset, greaterThan(1000));
+    expect(controller.activeSceneId, 'two');
+    scrollController.dispose();
+    controller.dispose();
+  });
+
   testWidgets('reduced motion never creates a video driver', (tester) async {
     final factory = FakeDriverFactory();
     await tester.pumpWidget(
@@ -123,6 +169,78 @@ void main() {
     await tester.pump();
     expect(factory.created, 0);
     expect(find.text('Scene one'), findsOneWidget);
+  });
+
+  testWidgets('deep-linked scene is the first reduced-motion frame', (
+    tester,
+  ) async {
+    ScrollWorldSceneFrame? renderedFrame;
+    await tester.pumpWidget(
+      host(
+        disableAnimations: true,
+        child: ScrollWorldView(
+          scenes: testScenes(),
+          initialSceneId: 'two',
+          initialSceneProgress: 0.7,
+          sceneContentBuilder: (context, frame) {
+            renderedFrame = frame;
+            return Text('Live ${frame.scene.id}');
+          },
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Live two'), findsOneWidget);
+    expect(renderedFrame?.scene.id, 'two');
+    expect(renderedFrame?.rawProgress, closeTo(0.7, 0.01));
+    expect(renderedFrame?.reducedMotion, isTrue);
+  });
+
+  testWidgets('gate blocks forward navigation until released', (tester) async {
+    final scrollController = ScrollController();
+    final journeyController = ScrollWorldController();
+    addTearDown(scrollController.dispose);
+    addTearDown(journeyController.dispose);
+    final scenes = <ScrollWorldScene>[
+      const ScrollWorldScene(
+        id: 'setup',
+        sources: ScrollWorldSources(
+          webStandard: ScrollWorldSource.asset('setup.mp4'),
+        ),
+        poster: AssetImage('setup.webp'),
+        scrollExtent: 2,
+        gateAt: 0.6,
+      ),
+      const ScrollWorldScene(
+        id: 'hub',
+        sources: ScrollWorldSources(
+          webStandard: ScrollWorldSource.asset('hub.mp4'),
+        ),
+        poster: AssetImage('hub.webp'),
+        transitionExtent: 0,
+      ),
+    ];
+    await tester.pumpWidget(
+      host(
+        disableAnimations: true,
+        child: ScrollWorldView(
+          scenes: scenes,
+          scrollController: scrollController,
+          controller: journeyController,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.end);
+    await tester.pump();
+
+    expect(journeyController.activeSceneId, 'setup');
+    expect(journeyController.activeSceneProgress, closeTo(0.6, 0.01));
+    journeyController.openGate('setup');
+    await tester.sendKeyEvent(LogicalKeyboardKey.end);
+    await tester.pump();
+    expect(journeyController.activeSceneId, 'hub');
   });
 
   testWidgets('navigation is labelled and changes scenes', (tester) async {

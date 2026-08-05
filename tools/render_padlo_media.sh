@@ -28,22 +28,23 @@ fi
 [[ "$mode" == 'validate' || "$mode" == 'preview' ]] && exit 0
 
 mkdir -p "$assets/videos" "$assets/posters"
-names=(see-court see-court-net-depth net-depth net-depth-recovery recovery recovery-spacing spacing spacing-transition transition)
-starts=(1 60 83 142 165 224 247 306 329)
-counts=(60 24 60 24 60 24 60 24 60)
+names=(first-serve positioning-lab decision-gate player-tunnel player-setup clubhouse analysis-court report-vault replay-arena profile-locker)
+starts=(1 48 95 142 189 236 283 330 377 424)
+focals=(30 77 124 171 218 265 312 359 406 453)
 for current in "${profiles[@]}"; do
   frames="$output/$current/frames/frame_%04d.png"
+  if [[ "$current" == 'landscape' ]]; then scale='scale=720:404,pad=720:406:0:1:black'; else scale='scale=404:720'; fi
   for index in "${!names[@]}"; do
     ffmpeg -hide_banner -loglevel error -y -framerate 24 -start_number "${starts[$index]}" \
-      -i "$frames" -frames:v "${counts[$index]}" -an -vf 'unsharp=5:5:0.45:5:5:0.0' \
-      -c:v libx264 -preset slow -crf 26 -pix_fmt yuv420p -g 1 -keyint_min 1 \
+      -i "$frames" -frames:v 48 -an -vf "$scale,unsharp=5:5:0.35:5:5:0.0" \
+      -c:v libx264 -preset slow -qp 33 -pix_fmt yuv420p -g 1 -keyint_min 1 \
       -sc_threshold 0 -movflags +faststart "$assets/videos/${names[$index]}-$current.mp4"
   done
 done
 
 if [[ " ${profiles[*]} " == *' landscape '* ]]; then
-  for spec in see-court:36 net-depth:112 recovery:194 spacing:276 transition:360; do
-    name="${spec%%:*}"; frame="${spec##*:}"; printf -v padded '%04d' "$frame"
+  for index in "${!names[@]}"; do
+    name="${names[$index]}"; frame="${focals[$index]}"; printf -v padded '%04d' "$frame"
     ffmpeg -hide_banner -loglevel error -y -i "$output/landscape/frames/frame_$padded.png" \
       -c:v libwebp -quality 84 "$assets/posters/$name.webp"
   done

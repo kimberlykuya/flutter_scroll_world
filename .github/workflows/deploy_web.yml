@@ -67,6 +67,6 @@ jobs:
         run: |
           root="${{ steps.deployment.outputs.page_url }}padlo/"
           app_status=$(curl --retry 5 --retry-delay 3 --silent --output /dev/null --write-out '%{http_code}' "$root")
-          media_status=$(curl --retry 5 --retry-delay 3 --silent --output /dev/null --write-out '%{http_code}' --header 'Range: bytes=0-1023' "${root}assets/assets/videos/see-court-landscape.mp4")
+          media_status=$(curl --retry 5 --retry-delay 3 --silent --output /dev/null --write-out '%{http_code}' --header 'Range: bytes=0-1023' "${root}assets/assets/videos/first-serve-landscape.mp4")
           [[ "$app_status" == "200" ]] || { echo "Padlo app returned $app_status"; exit 1; }
           [[ "$media_status" == "200" || "$media_status" == "206" ]] || { echo "Padlo media returned $media_status"; exit 1; }
