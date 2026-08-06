@@ -14,7 +14,17 @@ if ([string]::IsNullOrWhiteSpace($OutputDirectory)) {
 
 $fvmConfig = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot '.fvmrc') | ConvertFrom-Json
 $sdkRevision = [string]$fvmConfig.flutter
-$flutterExecutable = Join-Path $env:USERPROFILE "fvm\versions\$sdkRevision\bin\flutter.bat"
+$versionsRoot = Join-Path $env:USERPROFILE 'fvm\versions'
+$flutterExecutable = Join-Path $versionsRoot "$sdkRevision\bin\flutter.bat"
+if (-not (Test-Path -LiteralPath $flutterExecutable)) {
+  $compatibleSdks = @(
+    Get-ChildItem -LiteralPath $versionsRoot -Directory -Filter "$sdkRevision*" -ErrorAction SilentlyContinue |
+      Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName 'bin\flutter.bat') }
+  )
+  if ($compatibleSdks.Count -eq 1) {
+    $flutterExecutable = Join-Path $compatibleSdks[0].FullName 'bin\flutter.bat'
+  }
+}
 if (-not (Test-Path -LiteralPath $flutterExecutable)) {
   throw "Pinned Flutter SDK $sdkRevision is missing. Run 'fvm install' from the repository root first."
 }

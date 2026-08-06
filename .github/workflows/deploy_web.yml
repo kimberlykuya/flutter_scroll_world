@@ -28,15 +28,19 @@ jobs:
         run: |
           dart pub global activate fvm 3.2.1
           export PATH="$HOME/.pub-cache/bin:$PATH"
-          fvm install
-          fvm flutter --version | grep -q 'revision 8ebfb2e491'
-          fvm flutter config --enable-native-assets --enable-dart-data-assets
+          fvm install 8ebfb2e491 --setup --skip-pub-get
+          flutter_sdk=$(find "$HOME/fvm/versions" -maxdepth 1 -type d -name '8ebfb2e491*' -print -quit)
+          test -x "$flutter_sdk/bin/flutter"
+          test "$(git -C "$flutter_sdk" rev-parse HEAD)" = '8ebfb2e49104ba1f63ac9b52d6ce7a866aabd2d0'
+          echo "$flutter_sdk/bin" >> "$GITHUB_PATH"
+          "$flutter_sdk/bin/flutter" --version | grep -q 'revision 8ebfb2e491'
+          "$flutter_sdk/bin/flutter" config --enable-native-assets --enable-dart-data-assets
       - uses: actions/configure-pages@v6
-      - run: fvm flutter pub get
-      - run: fvm flutter test packages/scroll_world
-      - run: fvm flutter build web --release --no-wasm-dry-run --base-href /flutter_scroll_world/
+      - run: flutter pub get
+      - run: flutter test packages/scroll_world
+      - run: flutter build web --release --no-wasm-dry-run --base-href /flutter_scroll_world/
         working-directory: example
-      - run: fvm flutter build web --release --no-wasm-dry-run --base-href /flutter_scroll_world/padlo/
+      - run: flutter build web --release --no-wasm-dry-run --base-href /flutter_scroll_world/padlo/
         working-directory: examples/padlo_poc
       - name: Verify Padlo Pages export
         shell: bash

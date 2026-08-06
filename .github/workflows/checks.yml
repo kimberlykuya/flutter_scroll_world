@@ -22,10 +22,7 @@ jobs:
       - name: Resolve stable package and Kenya workspaces independently
         shell: bash
         run: |
-          # The Padlo workspace member requires Flutter master. Remove the
-          # workspace-only marker in this ephemeral checkout so stable can
-          # resolve the reusable package and Kenya example independently.
-          sed -i '/^resolution: workspace$/d' packages/scroll_world/pubspec.yaml example/pubspec.yaml
+          dart tools/prepare_stable_ci.dart
           cat > example/pubspec_overrides.yaml <<'EOF'
           dependency_overrides:
             scroll_world:
@@ -33,7 +30,7 @@ jobs:
           EOF
           (cd packages/scroll_world && flutter pub get)
           (cd example && flutter pub get)
-      - run: dart format --output=none --set-exit-if-changed packages/scroll_world/lib packages/scroll_world/test example/lib example/test example/integration_test tools/generate_manifest.dart
+      - run: dart format --output=none --set-exit-if-changed packages/scroll_world/lib packages/scroll_world/test example/lib example/test example/integration_test tools/generate_manifest.dart tools/prepare_stable_ci.dart
       - run: python -m py_compile tools/blender/generate_kenya_world.py tools/blender/generate_padlo_world.py
       - run: bash -n tools/render_3d_media.sh tools/render_padlo_media.sh tools/encode_video.sh
       - run: flutter analyze packages/scroll_world
@@ -59,14 +56,18 @@ jobs:
         run: |
           dart pub global activate fvm 3.2.1
           export PATH="$HOME/.pub-cache/bin:$PATH"
-          fvm install
-          fvm flutter --version | grep -q 'revision 8ebfb2e491'
-          fvm flutter config --enable-native-assets --enable-dart-data-assets
-      - run: fvm flutter pub get
-      - run: fvm dart format --output=none --set-exit-if-changed examples/padlo_poc/lib examples/padlo_poc/test examples/padlo_poc/integration_test
-      - run: fvm flutter analyze examples/padlo_poc
-      - run: fvm flutter test examples/padlo_poc/test
-      - run: fvm flutter build web --release --no-wasm-dry-run --base-href /flutter_scroll_world/padlo/
+          fvm install 8ebfb2e491 --setup --skip-pub-get
+          flutter_sdk=$(find "$HOME/fvm/versions" -maxdepth 1 -type d -name '8ebfb2e491*' -print -quit)
+          test -x "$flutter_sdk/bin/flutter"
+          test "$(git -C "$flutter_sdk" rev-parse HEAD)" = '8ebfb2e49104ba1f63ac9b52d6ce7a866aabd2d0'
+          echo "$flutter_sdk/bin" >> "$GITHUB_PATH"
+          "$flutter_sdk/bin/flutter" --version | grep -q 'revision 8ebfb2e491'
+          "$flutter_sdk/bin/flutter" config --enable-native-assets --enable-dart-data-assets
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed examples/padlo_poc/lib examples/padlo_poc/test examples/padlo_poc/integration_test
+      - run: flutter analyze examples/padlo_poc
+      - run: flutter test examples/padlo_poc/test
+      - run: flutter build web --release --no-wasm-dry-run --base-href /flutter_scroll_world/padlo/
         working-directory: examples/padlo_poc
 
   ios-package-and-kenya:
@@ -82,7 +83,7 @@ jobs:
       - name: Resolve stable package and Kenya workspaces independently
         shell: bash
         run: |
-          sed -i '/^resolution: workspace$/d' packages/scroll_world/pubspec.yaml example/pubspec.yaml
+          dart tools/prepare_stable_ci.dart
           cat > example/pubspec_overrides.yaml <<'EOF'
           dependency_overrides:
             scroll_world:
