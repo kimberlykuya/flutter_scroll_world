@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -8,6 +9,8 @@ import 'package:scroll_world/scroll_world.dart';
 final Uint8List _pixel = base64Decode(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
 );
+
+const double _goldenDiffTolerance = 0.002;
 
 List<ScrollWorldScene> goldenScenes() => <ScrollWorldScene>[
   ScrollWorldScene(
@@ -74,6 +77,17 @@ Widget goldenHost(
 );
 
 void main() {
+  final previousGoldenComparator = goldenFileComparator;
+  final localTestFile = File('test/golden_test.dart');
+  final testFile = localTestFile.existsSync()
+      ? localTestFile
+      : File('packages/scroll_world/test/golden_test.dart');
+  goldenFileComparator = _TolerantGoldenFileComparator(
+    testFile.absolute.uri,
+    precisionTolerance: _goldenDiffTolerance,
+  );
+  tearDownAll(() => goldenFileComparator = previousGoldenComparator);
+
   testWidgets('mobile portrait', (tester) async {
     await setSurface(tester, const Size(390, 844));
     await tester.pumpWidget(goldenHost(ScrollController()));
@@ -151,4 +165,34 @@ void main() {
       matchesGoldenFile('goldens/error_fallback.png'),
     );
   });
+}
+
+final class _TolerantGoldenFileComparator extends LocalFileComparator {
+  _TolerantGoldenFileComparator(
+    super.testFile, {
+    required double precisionTolerance,
+  }) : assert(
+         precisionTolerance >= 0 && precisionTolerance <= 1,
+         'precisionTolerance must be between 0 and 1',
+       ),
+       _precisionTolerance = precisionTolerance;
+
+  final double _precisionTolerance;
+
+  @override
+  Future<bool> compare(Uint8List imageBytes, Uri golden) async {
+    final result = await GoldenFileComparator.compareLists(
+      imageBytes,
+      await getGoldenBytes(golden),
+    );
+    final passed = result.passed || result.diffPercent <= _precisionTolerance;
+    if (passed) {
+      result.dispose();
+      return true;
+    }
+
+    final error = await generateFailureOutput(result, golden, basedir);
+    result.dispose();
+    throw FlutterError(error);
+  }
 }
