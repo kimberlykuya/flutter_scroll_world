@@ -78,6 +78,8 @@ jobs:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v5
+        with:
+          timeout: 1200000
       - name: Probe demo media delivery
         shell: bash
         run: |

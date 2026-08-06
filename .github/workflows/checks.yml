@@ -41,7 +41,12 @@ jobs:
         working-directory: packages/scroll_world
       - run: flutter test test
         working-directory: example
-      - run: dart pub -C packages/scroll_world publish --dry-run
+      - name: Package publish dry-run
+        shell: bash
+        run: |
+          publish_dir="$RUNNER_TEMP/scroll_world_publish"
+          cp -a packages/scroll_world "$publish_dir"
+          dart pub -C "$publish_dir" publish --dry-run
       - run: flutter build web --release
         working-directory: example
       - run: flutter build apk --debug
