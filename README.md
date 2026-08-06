@@ -62,6 +62,19 @@ fvm flutter build web --release --no-wasm-dry-run `
   --base-href /flutter_scroll_world/padlo/
 ```
 
+For a validated, upload-ready Padlo bundle on Windows, run this from the
+repository root:
+
+```powershell
+.\tools\export_padlo_web.ps1
+```
+
+The bundle is written to `build/padlo_web_export`. The script fails if the
+Pages base path is wrong, the GLB/logo/`flutter_scene` shader bundle is absent,
+the GLB exceeds 12 MiB, or video files leak into the Padlo build. Pushes to
+`main` deploy the Kenya example at `/flutter_scroll_world/` and this pilot at
+`/flutter_scroll_world/padlo/` through `.github/workflows/deploy_web.yml`.
+
 See [`examples/padlo_poc/README.md`](examples/padlo_poc/README.md) for the
 scene export, GLB budget, accessibility behavior, and acceptance checks.
 

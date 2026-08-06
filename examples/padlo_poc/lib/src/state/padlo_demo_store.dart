@@ -51,6 +51,7 @@ final class PadloDemoStore extends ChangeNotifier {
       _selectedReportId = selected;
     }
     _worldCheckpoint = preferences.getString(_checkpointKey) ?? 'first-serve';
+    notifyListeners();
   }
 
   Future<void> completeOnboarding() async {

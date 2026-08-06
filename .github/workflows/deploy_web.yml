@@ -38,12 +38,28 @@ jobs:
         working-directory: example
       - run: fvm flutter build web --release --no-wasm-dry-run --base-href /flutter_scroll_world/padlo/
         working-directory: examples/padlo_poc
+      - name: Verify Padlo Pages export
+        shell: bash
+        run: |
+          padlo="examples/padlo_poc/build/web"
+          test -s "$padlo/index.html"
+          grep -Fq '<base href="/flutter_scroll_world/padlo/">' "$padlo/index.html"
+          test -s "$padlo/assets/assets/scene/padlo-pilot.glb"
+          test -s "$padlo/assets/assets/brand/padlo-logo.png"
+          test -s "$padlo/assets/packages/flutter_scene/build/shaderbundles/base.shaderbundle"
+          glb_bytes=$(stat -c '%s' "$padlo/assets/assets/scene/padlo-pilot.glb")
+          [[ "$glb_bytes" -le 12582912 ]] || { echo "Padlo GLB exceeds 12 MiB"; exit 1; }
+          if find "$padlo" -type f \( -iname '*.mp4' -o -iname '*.webm' -o -iname '*.mov' \) -print -quit | grep -q .; then
+            echo "Padlo export unexpectedly contains video media"
+            exit 1
+          fi
       - name: Assemble both examples
         shell: bash
         run: |
           mkdir -p build/pages/padlo
           cp -a example/build/web/. build/pages/
           cp -a examples/padlo_poc/build/web/. build/pages/padlo/
+          touch build/pages/.nojekyll
       - uses: actions/upload-pages-artifact@v5
         with:
           path: build/pages
@@ -73,6 +89,8 @@ jobs:
         run: |
           root="${{ steps.deployment.outputs.page_url }}padlo/"
           app_status=$(curl --retry 5 --retry-delay 3 --silent --output /dev/null --write-out '%{http_code}' "$root")
-          media_status=$(curl --retry 5 --retry-delay 3 --silent --output /dev/null --write-out '%{http_code}' "${root}assets/assets/scene/padlo-pilot.glb")
+          glb_status=$(curl --retry 5 --retry-delay 3 --silent --output /dev/null --write-out '%{http_code}' "${root}assets/assets/scene/padlo-pilot.glb")
+          shader_status=$(curl --retry 5 --retry-delay 3 --silent --output /dev/null --write-out '%{http_code}' "${root}assets/packages/flutter_scene/build/shaderbundles/base.shaderbundle")
           [[ "$app_status" == "200" ]] || { echo "Padlo app returned $app_status"; exit 1; }
-          [[ "$media_status" == "200" ]] || { echo "Padlo GLB returned $media_status"; exit 1; }
+          [[ "$glb_status" == "200" ]] || { echo "Padlo GLB returned $glb_status"; exit 1; }
+          [[ "$shader_status" == "200" ]] || { echo "Padlo shader bundle returned $shader_status"; exit 1; }

@@ -45,6 +45,11 @@ On Windows, the repository-root shortcut is `.\tools\run_padlo.ps1`. It
 always launches from this subproject so Flutter includes the GLB, brand assets,
 fonts, and `flutter_scene` shader bundle.
 
+Use `.\tools\export_padlo_web.ps1` from the repository root to create a
+validated GitHub Pages bundle in `build/padlo_web_export`. It builds with the
+pinned SDK and `/flutter_scroll_world/padlo/` base URL, then checks the GLB,
+logo, shader bundle, payload budget, and video-free runtime before exporting.
+
 ## Media
 
 `tools/blender/generate_padlo_world.py` builds a single deterministic nighttime

@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('real-time scene asset is committed locally', () {
-    final file = File('examples/padlo_poc/assets/scene/padlo-pilot.glb');
+    final file = _projectFile('assets/scene/padlo-pilot.glb');
     expect(file.existsSync(), isTrue);
     expect(file.lengthSync(), greaterThan(100000));
   });
@@ -14,11 +14,11 @@ void main() {
     'Padlo runtime asset tree contains no legacy video or poster folders',
     () {
       expect(
-        Directory('examples/padlo_poc/assets/videos').existsSync(),
+        Directory(_projectFile('assets/videos').path).existsSync(),
         isFalse,
       );
       expect(
-        Directory('examples/padlo_poc/assets/posters').existsSync(),
+        Directory(_projectFile('assets/posters').path).existsSync(),
         isFalse,
       );
     },
@@ -32,4 +32,11 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     expect(find.byType(SizedBox), findsOneWidget);
   });
+}
+
+File _projectFile(String relativePath) {
+  if (File('lib/main.dart').existsSync() && Directory('assets').existsSync()) {
+    return File(relativePath);
+  }
+  return File('examples/padlo_poc/$relativePath');
 }
