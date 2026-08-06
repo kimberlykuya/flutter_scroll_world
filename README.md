@@ -4,6 +4,7 @@
 This repository now provides two complementary ways to build a scroll world:
 
 - **Flutter package (`scroll_world` 0.1.0):** reusable scroll-linked video scenes for Android, iOS, and web, with Blob-backed seeking, smoothed scrubbing, interactive scene actions, reverse replay, responsive sources, bounded controller pooling, and reduced motion.
+- **Padlo real-time 3D pilot:** a web-only `flutter_scene` experiment that uses one Blender GLB and a scroll-driven animation timeline—no Padlo video is loaded or decoded.
 - **Agent skill:** the existing framework-agnostic creative pipeline and vanilla-JavaScript scrub engine remain under `skills/scroll-world` unchanged.
 
 ## Flutter package quick start
@@ -16,31 +17,53 @@ Slovenia product proof of concept in `examples/padlo_poc`.
 flutter pub get
 flutter test packages/scroll_world
 flutter run -d chrome -t example/lib/main.dart
-flutter run -d chrome -t examples/padlo_poc/lib/main.dart
 ```
 
-## Padlo Slovenia product proof of concept
+Use the pinned FVM revision for Padlo:
 
-The second example is one continuous spatial product world. A forward-only
-camera moves through ten connected locations: the positioning court, tactical
-missions, player setup terminal, portal clubhouse, analysis court, report
-vault, tactical replay arena, and profile locker. Registration, reports, and
-controls are live Flutter content aligned over the Blender film—there is no
-post-onboarding dashboard switch. Existing hash routes address camera anchors
-without rebuilding the world. No recording is uploaded and no backend is used.
+```powershell
+.\tools\run_padlo.ps1
+```
 
-See [`examples/padlo_poc/README.md`](examples/padlo_poc/README.md) for the flow,
-media pipeline, brand attribution, and local run commands.
+The helper resolves the pinned SDK and changes into `examples/padlo_poc`
+before launching. Running the Padlo target from the workspace root compiles the
+entrypoint against the wrong web asset manifest and causes GLB/shader 404s.
 
-The example includes a deterministic, audio-free H.264 media set rendered from
-an original procedural Blender 5.2 LTS world. A stylized Nairobi skyline and
-matatu flow into tea-covered Highlands, then a river leads to a Swahili-inspired
-Coast with palms and a dhow. Landscape and portrait media stay below the GitHub
-Pages demo budget; use the agent skill below or your own production pipeline for
-larger cinematic assets.
+## Padlo real-time 3D pilot
 
-On the final Coast page, **Replay the journey** travels through the full world
-backwards and stops at Nairobi. Any manual input interrupts the replay.
+The Padlo example is a web-only three-chapter spatial prototype:
+
+1. **First Serve** — the camera descends into a Ljubljana court.
+2. **Positioning Lab** — the player chooses the blue pressure zone to release a
+   deterministic progress gate.
+3. **Decision Gate** — the player reads the next ball, chooses a tactical path,
+   and can replay the journey back to the opening composition.
+
+The camera, players, glowing ball, court zones, lighting, and coaching markers
+are animated in a single `flutter_scene` GLB. A vertical scroll spacer is the
+only timeline authority; a ticker smooths the rendered camera position and
+`AnimationClip.seek()` samples the authored Blender animation. Padlo MP4 files
+are not included in the application manifest or runtime bundle. Keyboard and
+screen-space controls mirror the in-world zones, and unsupported WebGL2/Impeller
+surfaces receive an accessible fallback.
+
+The pilot uses an FVM-managed Flutter master revision because `flutter_scene
+0.20.0` is pre-1.0 and requires the newer engine. The checked-in `.fvmrc`
+selects the immutable revision; it is recorded in
+[`tools/flutter_scene_toolchain.md`](tools/flutter_scene_toolchain.md).
+
+```powershell
+fvm install
+fvm flutter config --enable-native-assets --enable-dart-data-assets
+fvm flutter pub get
+Set-Location examples/padlo_poc
+fvm flutter run -d chrome
+fvm flutter build web --release --no-wasm-dry-run `
+  --base-href /flutter_scroll_world/padlo/
+```
+
+See [`examples/padlo_poc/README.md`](examples/padlo_poc/README.md) for the
+scene export, GLB budget, accessibility behavior, and acceptance checks.
 
 ```dart
 ScrollWorldView(

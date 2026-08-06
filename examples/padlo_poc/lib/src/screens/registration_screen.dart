@@ -270,11 +270,6 @@ final class _RegistrationVisual extends StatelessWidget {
     decoration: BoxDecoration(
       color: PadloTokens.primary,
       borderRadius: BorderRadius.circular(PadloTokens.radiusLarge),
-      image: const DecorationImage(
-        image: AssetImage('assets/posters/transition.webp'),
-        fit: BoxFit.cover,
-        opacity: 0.72,
-      ),
     ),
     child: DecoratedBox(
       decoration: BoxDecoration(

@@ -19,7 +19,17 @@ jobs:
           flutter-version: 3.38.5
           channel: stable
           cache: true
-      - run: flutter pub get
+      - name: Resolve stable Kenya workspace
+        shell: bash
+        run: |
+          sed -i '/^resolution: workspace$/d' packages/scroll_world/pubspec.yaml example/pubspec.yaml
+          cat > example/pubspec_overrides.yaml <<'EOF'
+          dependency_overrides:
+            scroll_world:
+              path: ../packages/scroll_world
+          EOF
+          (cd packages/scroll_world && flutter pub get)
+          (cd example && flutter pub get)
       - name: Start ChromeDriver
         run: chromedriver --port=4444 &
       - run: flutter drive --driver test_driver/integration_test.dart --target integration_test/scroll_world_test.dart -d chrome
@@ -30,15 +40,21 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - uses: dart-lang/setup-dart@v1
         with:
-          flutter-version: 3.38.5
-          channel: stable
-          cache: true
-      - run: flutter pub get
+          sdk: stable
+      - name: Install pinned Flutter master through FVM
+        shell: bash
+        run: |
+          dart pub global activate fvm 3.2.1
+          export PATH="$HOME/.pub-cache/bin:$PATH"
+          fvm install
+          fvm flutter --version | grep -q 'revision 8ebfb2e491'
+          fvm flutter config --enable-native-assets --enable-dart-data-assets
+      - run: fvm flutter pub get
       - name: Start ChromeDriver
         run: chromedriver --port=4444 &
-      - run: flutter drive --driver test_driver/integration_test.dart --target integration_test/padlo_flow_test.dart -d chrome
+      - run: fvm flutter drive --driver test_driver/integration_test.dart --target integration_test/padlo_flow_test.dart -d chrome
         working-directory: examples/padlo_poc
 
   android:
@@ -51,7 +67,18 @@ jobs:
           flutter-version: 3.38.5
           channel: stable
           cache: true
-      - run: flutter pub get
+      - name: Resolve stable Kenya workspace
+        shell: bash
+        run: |
+          printf 'resolution:\n' > packages/scroll_world/pubspec_overrides.yaml
+          cat > example/pubspec_overrides.yaml <<'EOF'
+          resolution:
+          dependency_overrides:
+            scroll_world:
+              path: ../packages/scroll_world
+          EOF
+          (cd packages/scroll_world && flutter pub get)
+          (cd example && flutter pub get)
       - uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
@@ -59,4 +86,3 @@ jobs:
           profile: pixel_6
           script: |
             cd example && flutter test integration_test -d emulator-5554
-            cd ../examples/padlo_poc && flutter test integration_test -d emulator-5554

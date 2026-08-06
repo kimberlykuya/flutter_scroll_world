@@ -5,7 +5,7 @@ import '../screens/padlo_world_screen.dart';
 import '../state/padlo_demo_store.dart';
 
 GoRouter buildPadloRouter(PadloDemoStore store) => GoRouter(
-  initialLocation: _initialLocation(store),
+  initialLocation: '/onboarding',
   refreshListenable: store,
   routes: <RouteBase>[
     GoRoute(path: '/', redirect: (context, state) => '/onboarding'),
@@ -16,11 +16,12 @@ GoRouter buildPadloRouter(PadloDemoStore store) => GoRouter(
       ),
       routes: <RouteBase>[
         _worldRoute('/onboarding'),
-        _worldRoute('/register'),
-        _worldRoute('/app/home'),
-        _worldRoute('/app/record'),
+        _worldRoute('/register', pilotRedirect: true),
+        _worldRoute('/app/home', pilotRedirect: true),
+        _worldRoute('/app/record', pilotRedirect: true),
         _worldRoute(
           '/app/reports',
+          pilotRedirect: true,
           routes: <RouteBase>[
             GoRoute(
               path: ':reportId',
@@ -29,43 +30,31 @@ GoRouter buildPadloRouter(PadloDemoStore store) => GoRouter(
             ),
           ],
         ),
-        _worldRoute('/app/profile'),
+        _worldRoute('/app/profile', pilotRedirect: true),
       ],
     ),
   ],
-  redirect: (context, state) {
-    final protected = state.uri.path.startsWith('/app/');
-    if (protected && !store.isRegistered) {
-      return Uri(
-        path: '/register',
-        queryParameters: <String, String>{'from': state.uri.path},
-      ).toString();
-    }
-    return null;
-  },
+  redirect: (context, state) => padloPilotRedirect(state.uri.path),
 );
 
-String _initialLocation(PadloDemoStore store) {
-  if (!store.isRegistered) {
-    return store.onboardingComplete ? '/register' : '/onboarding';
-  }
-  return switch (store.worldCheckpoint) {
-    'player-setup' => '/register',
-    'clubhouse' => '/app/home',
-    'analysis-court' => '/app/record',
-    'report-vault' => '/app/reports',
-    'replay-arena' => '/app/reports/${store.selectedReportId}',
-    'profile-locker' => '/app/profile',
-    _ => '/app/home',
-  };
+String? padloPilotRedirect(String path) {
+  if (path == '/' || path == '/onboarding') return null;
+  return Uri(
+    path: '/onboarding',
+    queryParameters: <String, String>{'from': path},
+  ).toString();
 }
 
 GoRoute _worldRoute(
   String path, {
   List<RouteBase> routes = const <RouteBase>[],
+  bool pilotRedirect = false,
 }) => GoRoute(
   path: path,
   routes: routes,
+  redirect: pilotRedirect
+      ? (context, state) => padloPilotRedirect(state.uri.path)
+      : null,
   pageBuilder: (context, state) =>
       const NoTransitionPage<void>(child: SizedBox.shrink()),
 );

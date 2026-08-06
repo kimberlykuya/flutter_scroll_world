@@ -55,7 +55,11 @@ def parse_args() -> argparse.Namespace:
     argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
     parser = argparse.ArgumentParser()
     parser.add_argument("--profile", choices=("landscape", "portrait"), default="landscape")
-    parser.add_argument("--mode", choices=("validate", "preview", "render"), default="validate")
+    parser.add_argument(
+        "--mode",
+        choices=("validate", "preview", "render", "export"),
+        default="validate",
+    )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--frames", default=",".join(str(frame) for frame in FOCAL_FRAMES.values()))
     return parser.parse_args(argv)
@@ -99,6 +103,10 @@ def material(
     shader.inputs["Roughness"].default_value = roughness
     shader.inputs["Metallic"].default_value = metallic
     shader.inputs["Alpha"].default_value = alpha
+    # flutter_scene renders glTF transparency in a depth-sorted pass. Keep
+    # translucent enclosure panels single-sided to avoid stacking the front
+    # and back faces of every thin glass box into an opaque slab.
+    result.use_backface_culling = alpha < 1
     if emission > 0:
         emission_input = shader.inputs.get("Emission Color") or shader.inputs.get("Emission")
         if emission_input:
@@ -255,16 +263,19 @@ def build_court(m) -> None:
     for x in (-5.15, 5.15):
         cylinder(f"Net_post_{x}", (x, 0, 0.58), 0.09, 1.16, m["ink"], vertices=14)
 
-    # Glass panels and blue steel posts suggest a real padel enclosure without
-    # copying any Slovenian venue architecture.
+    # Open blue steel outlines suggest the glass enclosure. Solid translucent
+    # boxes are intentionally avoided: on a real-time alpha-sorted renderer,
+    # their overlapping front/back faces can become opaque and cover the court.
     for y in (-10.05, 10.05):
         for x in (-3.75, -1.25, 1.25, 3.75):
-            box(f"Glass_back_{y}_{x}", (x, y, 1.65), (1.22, 0.035, 1.55), m["glass"], bevel=0.03)
+            box(f"Glass_back_top_{y}_{x}", (x, y, 3.2), (1.22, 0.025, 0.025), m["frame"])
+            box(f"Glass_back_mid_{y}_{x}", (x, y, 1.65), (1.22, 0.018, 0.018), m["frame"])
         for x in (-5.05, 5.05):
             cylinder(f"Back_post_{y}_{x}", (x, y, 2.0), 0.055, 4.0, m["frame"], vertices=12)
     for x in (-5.05, 5.05):
         for y in (-7.5, -2.5, 2.5, 7.5):
-            box(f"Glass_side_{x}_{y}", (x, y, 1.45), (0.035, 2.42, 1.35), m["glass"], bevel=0.03)
+            box(f"Glass_side_top_{x}_{y}", (x, y, 2.8), (0.025, 2.42, 0.025), m["frame"])
+            box(f"Glass_side_mid_{x}_{y}", (x, y, 1.45), (0.018, 2.42, 0.018), m["frame"])
             cylinder(f"Side_post_{x}_{y}", (x, y - 2.45, 2.0), 0.055, 4.0, m["frame"], vertices=12)
 
     # Court lights frame the night-session atmosphere.
@@ -285,6 +296,7 @@ def build_slovenian_horizon(m) -> None:
         (15.0, 16.0, 0.0, 5.8),
     ]
     for index, (x, y, z, height) in enumerate(mountains):
+        y += 24.0
         vertices = [
             (x - 5.2, y + 1.8, z),
             (x + 5.2, y + 1.8, z),
@@ -552,7 +564,10 @@ def build_world(profile: str, output: Path) -> None:
         "ink": material("Ink", "#14181B"),
         "net": material("Net", "#252B38", roughness=0.8, alpha=0.78),
         "frame": material("Padlo frame", "#2139C5", metallic=0.25),
-        "glass": material("Glass", "#A7D6E8", roughness=0.12, alpha=0.28),
+        # Court glass should read as a faint blue reflection, never as a wall.
+        # Several panels overlap along the camera path, so a deliberately low
+        # source alpha is required for the real-time renderer.
+        "glass": material("Glass", "#A7D6E8", roughness=0.12, alpha=0.035),
         "light": material("Court light", "#FFF3D7", emission=2.2),
         "mountain": material("Alpine deep", "#101B2A"),
         "mountain_light": material("Alpine light", "#172C3C"),
@@ -658,6 +673,27 @@ def render_animation(profile: str, output: Path) -> None:
     bpy.ops.render.render(animation=True)
 
 
+def export_scene(profile: str, output: Path) -> None:
+    """Export the authored connected world for the real-time pilot."""
+    directory = output / profile
+    directory.mkdir(parents=True, exist_ok=True)
+    filepath = directory / f"padlo-pilot-{profile}.glb"
+    bpy.ops.wm.save_as_mainfile(filepath=str(directory / f"padlo-world-{profile}.blend"))
+    bpy.ops.export_scene.gltf(
+        filepath=str(filepath),
+        export_format="GLB",
+        export_animations=True,
+        export_cameras=True,
+        # Eevee and flutter_scene do not share the same physical light-energy
+        # scale. Exporting the Blender sun clips the blue court to white in
+        # WebGL, so runtime lighting is controlled by flutter_scene instead.
+        export_lights=False,
+        export_materials="EXPORT",
+        export_apply=True,
+    )
+    print(f"PADLO_SCENE_EXPORT={filepath}")
+
+
 def main() -> None:
     args = parse_args()
     output = args.output.resolve()
@@ -668,6 +704,8 @@ def main() -> None:
         render_preview(args.profile, output, [int(value) for value in args.frames.split(",") if value.strip()])
     elif args.mode == "render":
         render_animation(args.profile, output)
+    elif args.mode == "export":
+        export_scene(args.profile, output)
 
 
 if __name__ == "__main__":

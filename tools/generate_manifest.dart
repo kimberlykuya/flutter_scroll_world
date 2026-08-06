@@ -17,7 +17,10 @@ Future<void> main(List<String> arguments) async {
           .listSync(recursive: true)
           .whereType<File>()
           .where(
-            (file) => file.path.endsWith('.mp4') || file.path.endsWith('.webp'),
+            (file) =>
+                file.path.endsWith('.mp4') ||
+                file.path.endsWith('.webp') ||
+                file.path.endsWith('.glb'),
           )
           .toList()
         ..sort((a, b) => a.path.compareTo(b.path));
@@ -32,6 +35,9 @@ Future<void> main(List<String> arguments) async {
       'bytes': file.lengthSync(),
       'sha256': sha256.convert(await file.readAsBytes()).toString(),
     };
+    if (file.path.endsWith('.glb')) {
+      item['format'] = 'glb';
+    }
     if (file.path.endsWith('.mp4')) {
       final result = await Process.run('ffprobe', <String>[
         '-v',

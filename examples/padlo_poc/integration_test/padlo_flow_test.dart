@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -8,34 +9,35 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('complete local journey through the spatial product world', (
+  testWidgets('scrubs the real-time Padlo pilot forward and backward', (
     tester,
   ) async {
-    SharedPreferences.setMockInitialValues(<String, Object>{
-      'padlo_onboarding_complete': true,
-    });
+    SharedPreferences.setMockInitialValues(<String, Object>{});
     final store = PadloDemoStore();
     await store.load();
-    await tester.pumpWidget(
-      PadloApp(store: store, disableAnimationsOverride: true),
+    await tester.pumpWidget(PadloApp(store: store));
+    await tester.pump(const Duration(seconds: 2));
+
+    expect(find.text('First serve'), findsOneWidget);
+    final scrollTarget = find.byType(SingleChildScrollView);
+    for (var i = 0; i < 8; i++) {
+      await tester.sendEventToBinding(
+        PointerScrollEvent(
+          position: tester.getCenter(scrollTarget),
+          scrollDelta: const Offset(0, 420),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(find.text('Positioning lab'), findsOneWidget);
+
+    await tester.sendEventToBinding(
+      PointerScrollEvent(
+        position: tester.getCenter(scrollTarget),
+        scrollDelta: const Offset(0, -600),
+      ),
     );
-    await tester.pump(const Duration(milliseconds: 250));
-
-    expect(find.text('Unlock your positioning room.'), findsOneWidget);
-    await tester.ensureVisible(find.byKey(const Key('create-demo-account')));
-    await tester.tap(find.byKey(const Key('create-demo-account')));
-    await tester.pump(const Duration(milliseconds: 500));
-    expect(find.text('Analysis court'), findsOneWidget);
-
-    await tester.tap(find.text('Analysis court'));
     await tester.pump(const Duration(milliseconds: 350));
-    await tester.tap(find.byKey(const Key('analyze-demo-match')));
-    await tester.pump(const Duration(milliseconds: 1100));
-    expect(store.hasGeneratedReport, isTrue);
-
-    await tester.tap(find.text('Enter the replay arena'));
-    await tester.pump(const Duration(milliseconds: 350));
-    expect(find.textContaining('Ljubljana'), findsWidgets);
-    expect(find.textContaining('Kovač'), findsWidgets);
+    expect(find.text('First serve'), findsOneWidget);
   });
 }

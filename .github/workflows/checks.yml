@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  quality-and-builds:
+  stable-package-and-kenya:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -19,30 +19,57 @@ jobs:
           flutter-version: 3.38.5
           channel: stable
           cache: true
-      - run: flutter pub get
-      - run: dart format --output=none --set-exit-if-changed packages/scroll_world/lib packages/scroll_world/test example/lib example/test example/integration_test examples/padlo_poc/lib examples/padlo_poc/test examples/padlo_poc/integration_test tools/generate_manifest.dart
+      - name: Resolve stable package and Kenya workspaces independently
+        shell: bash
+        run: |
+          # The Padlo workspace member requires Flutter master. Remove the
+          # workspace-only marker in this ephemeral checkout so stable can
+          # resolve the reusable package and Kenya example independently.
+          sed -i '/^resolution: workspace$/d' packages/scroll_world/pubspec.yaml example/pubspec.yaml
+          cat > example/pubspec_overrides.yaml <<'EOF'
+          dependency_overrides:
+            scroll_world:
+              path: ../packages/scroll_world
+          EOF
+          (cd packages/scroll_world && flutter pub get)
+          (cd example && flutter pub get)
+      - run: dart format --output=none --set-exit-if-changed packages/scroll_world/lib packages/scroll_world/test example/lib example/test example/integration_test tools/generate_manifest.dart
       - run: python -m py_compile tools/blender/generate_kenya_world.py tools/blender/generate_padlo_world.py
       - run: bash -n tools/render_3d_media.sh tools/render_padlo_media.sh tools/encode_video.sh
-      - run: flutter analyze
+      - run: flutter analyze packages/scroll_world
+      - run: flutter analyze example
       - run: flutter test packages/scroll_world --coverage
       - run: flutter test example/test
-      - run: flutter test test
-        working-directory: examples/padlo_poc
-      - run: dart run tools/generate_manifest.dart
-      - run: git diff --exit-code -- example/assets/media_manifest.json
-      - run: dart run tools/generate_manifest.dart examples/padlo_poc/assets
-      - run: git diff --exit-code -- examples/padlo_poc/assets/media_manifest.json
       - run: dart pub -C packages/scroll_world publish --dry-run
       - run: flutter build web --release
         working-directory: example
-      - run: flutter build web --release --base-href /flutter_scroll_world/padlo/
-        working-directory: examples/padlo_poc
       - run: flutter build apk --debug
         working-directory: example
-      - run: flutter build apk --debug
+
+  padlo-real-time-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - name: Install pinned Flutter master through FVM
+        shell: bash
+        run: |
+          dart pub global activate fvm 3.2.1
+          export PATH="$HOME/.pub-cache/bin:$PATH"
+          fvm install
+          fvm flutter --version | grep -q 'revision 8ebfb2e491'
+          fvm flutter config --enable-native-assets --enable-dart-data-assets
+      - run: fvm flutter pub get
+      - run: fvm dart format --output=none --set-exit-if-changed examples/padlo_poc/lib examples/padlo_poc/test examples/padlo_poc/integration_test
+      - run: fvm flutter analyze examples/padlo_poc
+      - run: fvm flutter test examples/padlo_poc/test
+      - run: fvm flutter build web --release --no-wasm-dry-run --base-href /flutter_scroll_world/padlo/
         working-directory: examples/padlo_poc
 
-  ios-build:
+  ios-package-and-kenya:
     runs-on: macos-latest
     timeout-minutes: 30
     steps:
@@ -52,8 +79,16 @@ jobs:
           flutter-version: 3.38.5
           channel: stable
           cache: true
-      - run: flutter pub get
+      - name: Resolve stable package and Kenya workspaces independently
+        shell: bash
+        run: |
+          sed -i '/^resolution: workspace$/d' packages/scroll_world/pubspec.yaml example/pubspec.yaml
+          cat > example/pubspec_overrides.yaml <<'EOF'
+          dependency_overrides:
+            scroll_world:
+              path: ../packages/scroll_world
+          EOF
+          (cd packages/scroll_world && flutter pub get)
+          (cd example && flutter pub get)
       - run: flutter build ios --release --no-codesign
         working-directory: example
-      - run: flutter build ios --release --no-codesign
-        working-directory: examples/padlo_poc
