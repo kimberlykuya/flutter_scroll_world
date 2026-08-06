@@ -74,6 +74,11 @@ Pages base path is wrong, the GLB/logo/`flutter_scene` shader bundle is absent,
 the GLB exceeds 12 MiB, or video files leak into the Padlo build. Pushes to
 `main` deploy the Kenya example at `/flutter_scroll_world/` and this pilot at
 `/flutter_scroll_world/padlo/` through `.github/workflows/deploy_web.yml`.
+The workflow publishes the assembled static site to the `gh-pages` branch to
+avoid GitHub's artifact-deployment queue. Configure the repository once under
+**Settings > Pages** with **Deploy from a branch**, `gh-pages`, and `/(root)`.
+Under **Settings > Environments > github-pages**, also allow `gh-pages` in the
+deployment branches and tags rule (the existing `main` rule may remain).
 
 See [`examples/padlo_poc/README.md`](examples/padlo_poc/README.md) for the
 scene export, GLB budget, accessibility behavior, and acceptance checks.

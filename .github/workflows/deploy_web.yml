@@ -6,12 +6,11 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: pages-branch
   cancel-in-progress: true
 
 jobs:
@@ -35,7 +34,6 @@ jobs:
           echo "$flutter_sdk/bin" >> "$GITHUB_PATH"
           "$flutter_sdk/bin/flutter" --version | grep -q 'revision 8ebfb2e491'
           "$flutter_sdk/bin/flutter" config --enable-native-assets --enable-dart-data-assets
-      - uses: actions/configure-pages@v6
       - run: flutter pub get
       - run: flutter test packages/scroll_world
       - run: flutter build web --release --no-wasm-dry-run --base-href /flutter_scroll_world/
@@ -64,39 +62,66 @@ jobs:
           cp -a example/build/web/. build/pages/
           cp -a examples/padlo_poc/build/web/. build/pages/padlo/
           touch build/pages/.nojekyll
-      - uses: actions/upload-pages-artifact@v5
-        with:
-          path: build/pages
-
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Deploy
-        id: deployment
-        uses: actions/deploy-pages@v5
-        with:
-          timeout: 1200000
+      - name: Publish assembled site to gh-pages
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          publish_dir="$RUNNER_TEMP/flutter-scroll-world-pages"
+          mkdir -p "$publish_dir"
+          cp -a build/pages/. "$publish_dir/"
+          cd "$publish_dir"
+          git init
+          git checkout -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add --all
+          git commit -m "Deploy ${GITHUB_SHA}"
+          git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:gh-pages
+      - name: Request branch Pages build
+        id: pages_build
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api --method POST "repos/${GITHUB_REPOSITORY}/pages/builds" >/dev/null 2>&1; then
+            echo "requested=true" >> "$GITHUB_OUTPUT"
+            echo "Requested a Pages build from gh-pages."
+          else
+            echo "requested=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=One-time Pages setup required::In Settings > Pages, choose Deploy from a branch, gh-pages, /(root), then Save."
+          fi
       - name: Probe demo media delivery
+        if: steps.pages_build.outputs.requested == 'true'
         shell: bash
         run: |
-          url="${{ steps.deployment.outputs.page_url }}assets/assets/videos/nairobi-landscape.mp4"
-          status=$(curl --retry 5 --retry-delay 3 --silent --output /dev/null --write-out '%{http_code}' --header 'Range: bytes=0-1023' "$url")
+          url="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/assets/assets/videos/nairobi-landscape.mp4"
+          status=000
+          for attempt in {1..30}; do
+            status=$(curl --silent --output /dev/null --write-out '%{http_code}' --header 'Range: bytes=0-1023' "$url")
+            [[ "$status" == "200" || "$status" == "206" ]] && break
+            echo "Waiting for Pages media deployment (attempt $attempt/30, HTTP $status)..."
+            sleep 10
+          done
           if [[ "$status" != "200" && "$status" != "206" ]]; then
             echo "Unexpected media response: $status"
             exit 1
           fi
           echo "Media probe returned HTTP $status (206 confirms byte-range support)."
       - name: Probe Padlo app and GLB asset
+        if: steps.pages_build.outputs.requested == 'true'
         shell: bash
         run: |
-          root="${{ steps.deployment.outputs.page_url }}padlo/"
-          app_status=$(curl --retry 5 --retry-delay 3 --silent --output /dev/null --write-out '%{http_code}' "$root")
-          glb_status=$(curl --retry 5 --retry-delay 3 --silent --output /dev/null --write-out '%{http_code}' "${root}assets/assets/scene/padlo-pilot.glb")
-          shader_status=$(curl --retry 5 --retry-delay 3 --silent --output /dev/null --write-out '%{http_code}' "${root}assets/packages/flutter_scene/build/shaderbundles/base.shaderbundle")
+          root="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/padlo/"
+          app_status=000
+          for attempt in {1..30}; do
+            app_status=$(curl --silent --output /dev/null --write-out '%{http_code}' "$root")
+            [[ "$app_status" == "200" ]] && break
+            echo "Waiting for Padlo Pages deployment (attempt $attempt/30, HTTP $app_status)..."
+            sleep 10
+          done
+          glb_status=$(curl --silent --output /dev/null --write-out '%{http_code}' "${root}assets/assets/scene/padlo-pilot.glb")
+          shader_status=$(curl --silent --output /dev/null --write-out '%{http_code}' "${root}assets/packages/flutter_scene/build/shaderbundles/base.shaderbundle")
           [[ "$app_status" == "200" ]] || { echo "Padlo app returned $app_status"; exit 1; }
           [[ "$glb_status" == "200" ]] || { echo "Padlo GLB returned $glb_status"; exit 1; }
           [[ "$shader_status" == "200" ]] || { echo "Padlo shader bundle returned $shader_status"; exit 1; }
